@@ -1,4 +1,4 @@
-"""Screen capture + OCR — let JARVIS see what's on screen.
+"""Screen capture + OCR — let Lumi see what's on screen.
 
 Two tools:
   take_screenshot   — captures the full desktop (or a region), saves a PNG,

@@ -2,7 +2,7 @@
 
 A local-first, always-on AI voice assistant for Windows. Controlled entirely by voice through a wake word, Lumi runs on your machine and can open applications, manage files, browse the web, retrieve system information, set timers, take screenshots, and execute code — all hands-free.
 
-> Say **"hey jarvis"** and talk to your computer like it's a person.
+> Say **"hey lumi"** and talk to your computer like it's a person.
 
 ---
 
@@ -116,7 +116,7 @@ tts:
   speed: 1.1                     # slightly faster
 stt:
   model: "large-v3-turbo"        # smaller, faster whisper model
-jarvis:
+lumi:
   wake_word_sensitivity: 0.5     # lower = more sensitive
 ```
 
@@ -124,8 +124,8 @@ The full configuration reference:
 
 | Setting | Default | Notes |
 |---|---|---|
-| `jarvis.wake_word` | `"hey jarvis"` | Wake phrase |
-| `jarvis.wake_word_sensitivity` | `0.7` | Trigger threshold, 0.3–0.9 |
+| `lumi.wake_word` | `"hey lumi"` | Wake phrase |
+| `lumi.wake_word_sensitivity` | `0.7` | Trigger threshold, 0.3–0.9 |
 | `stt.model` | `"large-v3"` | Whisper model: `tiny`, `small`, `medium`, `large-v3`, `large-v3-turbo` |
 | `stt.device` | `"cuda"` | `"cuda"` for GPU, `"cpu"` for CPU-only |
 | `stt.compute_type` | `"float16"` | `"float16"` (GPU), `"int8"` (low VRAM), `"float32"` (CPU) |

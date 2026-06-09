@@ -1,4 +1,4 @@
-"""Timer, alarm, and reminder tools for JARVIS."""
+"""Timer, alarm, and reminder tools for Lumi."""
 from __future__ import annotations
 
 import threading
@@ -49,7 +49,7 @@ def set_timer(duration_seconds: int, label: str = "") -> str:
             from win10toast import ToastNotifier
             toaster = ToastNotifier()
             toaster.show_toast(
-                "JARVIS Timer",
+                "Lumi Timer",
                 f"Timer{label_str} finished! {duration_seconds}s elapsed.",
                 duration=10,
                 threaded=True,

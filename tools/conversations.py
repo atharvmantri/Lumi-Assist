@@ -1,4 +1,4 @@
-"""Conversation history tool — let JARVIS search past conversations."""
+"""Conversation history tool — let Lumi search past conversations."""
 from __future__ import annotations
 
 import json
@@ -34,7 +34,7 @@ def _load_recent(days: int = 7) -> list[dict[str, Any]]:
 @tool(
     name="search_conversations",
     description=(
-        "Search past JARVIS conversations. Returns recent turns matching "
+        "Search past Lumi conversations. Returns recent turns matching "
         "a keyword in the user's message or the assistant's response. "
         "Useful when the user says 'remember when we talked about X' or "
         "'what did I ask you yesterday about Y'. "
@@ -87,7 +87,7 @@ def search_conversations(keyword: str, days: int = 7, limit: int = 5) -> str:
         user = (m.get("user") or "")[:120]
         assistant = (m.get("assistant") or "")[:120]
         lines.append(f"[{ts}] you: {user}")
-        lines.append(f"[{ts}] jarvis: {assistant}")
+        lines.append(f"[{ts}] lumi: {assistant}")
         lines.append("---")
 
     total = len(matches)
@@ -101,7 +101,7 @@ def search_conversations(keyword: str, days: int = 7, limit: int = 5) -> str:
 @tool(
     name="conversation_stats",
     description=(
-        "Get statistics about past JARVIS conversations: total turns, "
+        "Get statistics about past Lumi conversations: total turns, "
         "average response length, tools used most frequently, etc. "
         "Use when the user asks 'how many times have we talked' or "
         "'what do I usually ask you about'."

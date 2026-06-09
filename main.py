@@ -1,11 +1,11 @@
-"""JARVIS — main entry point.
+"""Lumi — main entry point.
 
 Wires the core modules into an always-on voice loop:
 
     wake-word  →  STT  →  LLM (streaming)  →  TTS (sentence streaming)
 
 Architecture:
-  - System tray runs in the main thread (via pystray)
+  - System tray runs in the main thread (via PyQt6)
   - Voice loop runs in a background thread
   - Tray icon changes color based on state
   - Windows toast notifications for wake word / errors
@@ -181,7 +181,7 @@ def run_turn(
         return {"empty": True, "total_s": time.perf_counter() - t_turn_start}
 
     _tray(TrayState.THINKING, "Thinking...")
-    print("  [llm→tts streaming] jarvis: ", end="", flush=True)
+    print("  [llm→tts streaming] lumi: ", end="", flush=True)
 
     full_reply_parts: list[str] = []
     tool_calls_log: list[dict[str, Any]] = []
@@ -269,7 +269,7 @@ def voice_loop(stt: STT, llm: LLMClient, tts: TTS, stop_event: threading.Event) 
     det.start()
 
     print()
-    print("JARVIS is listening. Say 'hey jarvis' to wake. Ctrl+C to exit.")
+    print("Lumi is listening. Say 'hey lumi' to wake. Ctrl+C to exit.")
     print()
 
     turn = 0
@@ -305,7 +305,7 @@ def voice_loop(stt: STT, llm: LLMClient, tts: TTS, stop_event: threading.Event) 
 
 def text_loop(stt: STT, llm: LLMClient, tts: TTS) -> None:
     print()
-    print("JARVIS (text mode). Type a message, blank line to exit.")
+    print("Lumi (text mode). Type a message, blank line to exit.")
     print()
     tool_schemas = executor.get_schemas()
     turn = 0
@@ -319,7 +319,7 @@ def text_loop(stt: STT, llm: LLMClient, tts: TTS) -> None:
             break
         turn += 1
         print(f"\n--- turn {turn} ---")
-        print("  jarvis: ", end="", flush=True)
+        print("  lumi: ", end="", flush=True)
         full_reply = []
         tool_calls_log = []
 
@@ -371,7 +371,7 @@ def text_loop(stt: STT, llm: LLMClient, tts: TTS) -> None:
 # ============================================================================
 
 def dry_run(stt: STT, llm: LLMClient, tts: TTS) -> int:
-    fake_phrase = "Hello Jarvis, what time is it?"
+    fake_phrase = "Hello Lumi, what time is it?"
     print(f"[dry] synthesizing fake user utterance: {fake_phrase!r}")
 
     audio_22k = tts.synthesize_all(fake_phrase)
@@ -438,7 +438,7 @@ def _run_with_tray(cfg: dict[str, Any], stt: STT, llm: LLMClient, tts: TTS) -> N
     voice_thread = threading.Thread(
         target=voice_loop,
         args=(stt, llm, tts, stop_event),
-        name="jarvis-voice-loop",
+        name="lumi-voice-loop",
         daemon=True,
     )
     voice_thread.start()
@@ -456,7 +456,7 @@ def _run_with_tray(cfg: dict[str, Any], stt: STT, llm: LLMClient, tts: TTS) -> N
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="JARVIS — local voice assistant")
+    parser = argparse.ArgumentParser(description="Lumi — local voice assistant")
     parser.add_argument("--dry-run", action="store_true", help="One synthetic turn, no mic, no wake word")
     parser.add_argument("--type", action="store_true", help="Text input loop (no mic / no wake word)")
     parser.add_argument("--no-tray", action="store_true", help="Disable system tray (terminal only)")

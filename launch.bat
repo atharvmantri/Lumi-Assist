@@ -1,16 +1,16 @@
 @echo off
-:: JARVIS Quick Launch — starts with voice loop + tray
-:: Double-click this to run JARVIS
+:: Lumi Quick Launch — starts with voice loop + tray
+:: Double-click this to run Lumi
 
 cd /d "%~dp0"
 
 if not exist venv\Scripts\python.exe (
-    echo JARVIS venv not found. Run setup.bat first.
+    echo Lumi venv not found. Run setup.bat first.
     pause
     exit /b 1
 )
 
-echo Starting JARVIS...
+echo Starting Lumi...
 echo.
 venv\Scripts\python.exe main.py
 pause

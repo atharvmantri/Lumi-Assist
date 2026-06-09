@@ -2,13 +2,13 @@
 setlocal enabledelayedexpansion
 
 :: ============================================================
-:: JARVIS — One-command setup for Windows 11
+:: Lumi — One-command setup for Windows 11
 :: Run as: setup.bat
 :: ============================================================
 
 echo.
 echo ========================================
-echo   JARVIS Setup — Windows 11
+echo   Lumi Setup — Windows 11
 echo ========================================
 echo.
 
@@ -59,7 +59,7 @@ pip install -r requirements.txt
 if %errorlevel% neq 0 (
     echo.
     echo WARNING: Some packages failed to install.
-    echo This is often CUDA-related — JARVIS will still work on CPU.
+    echo This is often CUDA-related — Lumi will still work on CPU.
     echo.
 )
 echo.
@@ -77,7 +77,7 @@ echo.
 :: --- Create .env template ---
 echo [5/8] Setting up environment file...
 if not exist .env (
-    echo # JARVIS environment variables > .env
+    echo # Lumi environment variables > .env
     echo # Get your HackClub API key from: https://hackclub.com/ >> .env
     echo HACKCLUB_API_KEY= >> .env
     echo.
@@ -125,7 +125,7 @@ venv\Scripts\python.exe -m core.diagnostics
 if %errorlevel% neq 0 (
     echo.
     echo Some checks failed. Review the output above.
-    echo JARVIS may still work — some checks are optional.
+    echo Lumi may still work — some checks are optional.
     echo.
 ) else (
     echo All checks passed!

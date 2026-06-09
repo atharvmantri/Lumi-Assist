@@ -1,6 +1,6 @@
 """File read / write / list within (or below) the user's machine.
 
-No sandboxing right now — JARVIS can write anywhere the user can. The system
+No sandboxing right now — Lumi can write anywhere the user can. The system
 prompt instructs it to confirm destructive actions; we rely on that until v1.1.
 """
 from __future__ import annotations

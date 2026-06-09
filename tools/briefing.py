@@ -1,4 +1,4 @@
-"""Daily briefing — JARVIS can give a morning briefing."""
+"""Daily briefing — Lumi can give a morning briefing."""
 from __future__ import annotations
 
 import subprocess

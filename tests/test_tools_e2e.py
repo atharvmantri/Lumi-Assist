@@ -43,7 +43,7 @@ def run_one(client: LLMClient, prompt: str, expect_tool: bool, expect_tool_name:
             print(f"    [←tool] {payload['name']}: {r}")
 
     print(f"\nyou> {prompt}")
-    print("jarvis> ", end="", flush=True)
+    print("lumi> ", end="", flush=True)
     t0 = time.perf_counter()
     reply_parts: list[str] = []
     for tok in client.stream(prompt, tools=executor.get_schemas(), on_tool_event=on_tool):

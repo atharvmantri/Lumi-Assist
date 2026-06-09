@@ -1,12 +1,12 @@
 """Arbitrary Python execution — the universal escape hatch.
 
-This is JARVIS's "do anything not covered by another tool" lever. The model
+This is Lumi's "do anything not covered by another tool" lever. The model
 writes Python; we exec() it and hand back stdout / stderr / return value /
 exception. Convenience imports are preloaded into the namespace so the model
 doesn't burn tokens importing common modules.
 
 Every execution is logged to logs/python_exec.log with timestamp + full source
-+ result. That log is your forensic trail if JARVIS ever does something weird.
++ result. That log is your forensic trail if Lumi ever does something weird.
 
 Safety: this tool can do anything the user can. The system prompt instructs
 the model to confirm before destructive operations. Treat this as a power
@@ -231,17 +231,17 @@ def run_python(code: str) -> str:
     try:
         with contextlib.redirect_stdout(stdout_buf), contextlib.redirect_stderr(stderr_buf):
             if leading.strip():
-                exec(compile(leading, "<jarvis-run_python>", "exec"), namespace)
+                exec(compile(leading, "<lumi-run_python>", "exec"), namespace)
             # Try to eval the last line as an expression. If it's a statement
             # (assignment, def, etc.), fall back to exec.
             if last_line:
                 try:
                     last_expr_value = eval(
-                        compile(last_line, "<jarvis-run_python>", "eval"),
+                        compile(last_line, "<lumi-run_python>", "eval"),
                         namespace,
                     )
                 except SyntaxError:
-                    exec(compile(last_line, "<jarvis-run_python>", "exec"), namespace)
+                    exec(compile(last_line, "<lumi-run_python>", "exec"), namespace)
     except SystemExit as e:
         elapsed = time.perf_counter() - t0
         msg = f"SystemExit({e.code!r}) — code attempted to exit the process"

@@ -1,4 +1,4 @@
-"""Configuration loading for JARVIS.
+"""Configuration loading for Lumi.
 
 Loads `config.yaml` from the project root and exposes typed accessors.
 Single source of truth — every core module imports `load_config()` rather

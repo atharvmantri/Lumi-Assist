@@ -1,4 +1,4 @@
-"""JARVIS diagnostics — verify all components are healthy before a run.
+"""Lumi diagnostics — verify all components are healthy before a run.
 
 Checks:
   - Python version
@@ -47,7 +47,7 @@ def _check_config() -> tuple[str, bool, str]:
     has_api = bool(cfg.get("llm", {}).get("api_key_env", ""))
     return "config.yaml", True, (
         f"model={cfg['llm']['model']}, tts={cfg['tts']['engine']}, "
-        f"wake='{cfg['jarvis']['wake_word']}'"
+        f"wake='{cfg['lumi']['wake_word']}'"
     )
 
 
@@ -147,11 +147,11 @@ def run_checks() -> list[tuple[str, bool, str]]:
 
 def main() -> None:
     import argparse
-    parser = argparse.ArgumentParser(description="JARVIS diagnostics")
+    parser = argparse.ArgumentParser(description="Lumi diagnostics")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     args = parser.parse_args()
 
-    print("JARVIS Diagnostics")
+    print("Lumi Diagnostics")
     print("=" * 50)
 
     t0 = time.perf_counter()
@@ -168,7 +168,7 @@ def main() -> None:
     print("=" * 50)
     print(f"  {passed}/{len(results)} checks passed, {failed} failed ({elapsed:.1f}s)")
     if failed:
-        print("  Fix failures before running JARVIS.")
+        print("  Fix failures before running Lumi.")
         raise SystemExit(1)
     print("  All systems ready.")
 

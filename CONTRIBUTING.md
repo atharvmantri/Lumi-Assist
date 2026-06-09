@@ -1,4 +1,4 @@
-# Contributing to JARVIS
+# Contributing to Lumi
 
 Thanks for your interest! Here's how to get started.
 

@@ -1,11 +1,11 @@
-# JARVIS — AI Voice Assistant for Windows
+# Lumi — AI Voice Assistant for Windows
 ### Product Requirements Document · v1.0
 
 ---
 
 ## 1. Overview
 
-**JARVIS** is a fully local, always-on AI voice assistant for Windows that feels like having a personal AI operating co-pilot. It listens for a wake word, transcribes your speech on-device using a GPU-accelerated Whisper model, routes your request through a powerful cloud LLM (Nemotron Ultra), executes actions on your PC, and responds with natural-sounding speech synthesized entirely on your GPU. Zero typing. Zero friction. Just talk.
+**Lumi** is a fully local, always-on AI voice assistant for Windows that feels like having a personal AI operating co-pilot. It listens for a wake word, transcribes your speech on-device using a GPU-accelerated Whisper model, routes your request through a powerful cloud LLM (Nemotron Ultra), executes actions on your PC, and responds with natural-sounding speech synthesized entirely on your GPU. Zero typing. Zero friction. Just talk.
 
 > *"It's not a chatbot you open. It's an assistant that's already there."*
 
@@ -32,7 +32,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        JARVIS RUNTIME                           │
+│                        Lumi RUNTIME                           │
 │                                                                 │
 │  ┌──────────────┐    ┌──────────────┐    ┌───────────────────┐  │
 │  │  WAKE WORD   │    │     STT      │    │       LLM         │  │
@@ -60,7 +60,7 @@
 | Property | Value |
 |---|---|
 | Library | `openWakeWord` (free, no key needed) or `pvporcupine` (Picovoice, free tier) |
-| Wake phrase | `"Hey Jarvis"` (default, configurable in `config.yaml`) |
+| Wake phrase | `"Hey Lumi"` (default, configurable in `config.yaml`) |
 | Runs on | CPU (lightweight — leaves GPU free) |
 | Latency | < 200ms to trigger STT |
 | Behavior | Plays a soft chime, lights up UI, begins recording |
@@ -101,11 +101,11 @@ stt_model = WhisperModel("large-v3", device="cuda", compute_type="float16")
 | Context window | Large (550B parameter model) |
 | Streaming | Yes — token-by-token for low perceived latency |
 
-The LLM is the brain of JARVIS. It receives the transcribed text plus a powerful system prompt that defines its role, available tools, and PC context. It returns either a plain response or a structured tool call to execute.
+The LLM is the brain of Lumi. It receives the transcribed text plus a powerful system prompt that defines its role, available tools, and PC context. It returns either a plain response or a structured tool call to execute.
 
 **System Prompt Design:**
 ```
-You are JARVIS, an all-powerful AI assistant running on a Windows PC.
+You are Lumi, an all-powerful AI assistant running on a Windows PC.
 Your job is to do ANYTHING the user asks — open apps, write code, manage
 files, search the web, control system settings, automate tasks, answer
 questions. You always find a way. You respond concisely (1-3 sentences max
@@ -136,7 +136,7 @@ stream = client.chat.completions.create(
 
 ### 4.4 Action Executor (PC Control)
 
-This is what makes JARVIS genuinely powerful. The LLM can call any of these tools, and JARVIS executes them on your machine:
+This is what makes Lumi genuinely powerful. The LLM can call any of these tools, and Lumi executes them on your machine:
 
 | Tool | Description | Library |
 |---|---|---|
@@ -159,7 +159,7 @@ This is what makes JARVIS genuinely powerful. The LLM can call any of these tool
 | `run_python` | Execute arbitrary Python code | `exec()` in sandbox |
 | `send_notification` | Windows toast notification | `win10toast` |
 
-The executor supports **multi-step chaining**: if completing a task requires 5 tool calls in sequence, JARVIS figures that out autonomously and does them all before responding.
+The executor supports **multi-step chaining**: if completing a task requires 5 tool calls in sequence, Lumi figures that out autonomously and does them all before responding.
 
 ---
 
@@ -193,7 +193,7 @@ The UI is **ambient** — it's there when you need it, invisible when you don't.
 
 ```
 ╔══════════════════════════════════════╗
-║  ◉  JARVIS                    — ✕   ║
+║  ◉  Lumi                    — ✕   ║
 ║──────────────────────────────────────║
 ║                                      ║
 ║   [Animated waveform / orb here]     ║
@@ -230,13 +230,13 @@ The UI is **ambient** — it's there when you need it, invisible when you don't.
 ## 6. Conversation & Memory
 
 ### Short-term Memory
-Full conversation history is maintained in-session (rolling last 20 turns) and passed to the LLM on every call. This lets JARVIS remember context: *"Wait, which file did I ask you to edit earlier?"*
+Full conversation history is maintained in-session (rolling last 20 turns) and passed to the LLM on every call. This lets Lumi remember context: *"Wait, which file did I ask you to edit earlier?"*
 
 ### Long-term Memory (v1.1)
-A local `ChromaDB` or SQLite-based memory store. JARVIS will remember facts you tell it, preferences, and frequently used commands across sessions.
+A local `ChromaDB` or SQLite-based memory store. Lumi will remember facts you tell it, preferences, and frequently used commands across sessions.
 
 ### PC Context Injection
-On each LLM call, JARVIS injects live PC context:
+On each LLM call, Lumi injects live PC context:
 ```python
 context = f"""
 Current time: {datetime.now()}
@@ -251,8 +251,8 @@ Clipboard: {get_clipboard_preview()}
 ## 7. Configuration (`config.yaml`)
 
 ```yaml
-jarvis:
-  wake_word: "hey jarvis"
+lumi:
+  wake_word: "hey lumi"
   wake_word_sensitivity: 0.7
 
 stt:
@@ -294,7 +294,7 @@ audio:
 ## 8. File & Folder Structure
 
 ```
-jarvis/
+lumi/
 ├── main.py                  # Entry point — starts all threads
 ├── config.yaml              # User configuration
 ├── .env                     # API keys (gitignored)
@@ -347,7 +347,7 @@ Claude Code should generate a `setup.bat` and `install.py` that:
 5. Download Piper voice model
 6. Prompt user for HackClub API key and write to `.env`
 7. Run a test inference on both STT and TTS to confirm GPU is working
-8. Launch JARVIS
+8. Launch Lumi
 
 ---
 
@@ -452,12 +452,12 @@ The 12GB VRAM is more than enough. Both models stay loaded permanently — no lo
 - Voice profile switching
 
 ### v1.2
-- Vision — take screenshots and ask JARVIS what's on screen
+- Vision — take screenshots and ask Lumi what's on screen
 - Browser automation via Playwright
 - Calendar & email integration (local clients)
 
 ### v2.0
-- Proactive mode — JARVIS notices things and tells you ("Your RAM is at 95%", "You have a meeting in 10 mins")
+- Proactive mode — Lumi notices things and tells you ("Your RAM is at 95%", "You have a meeting in 10 mins")
 - Plugin system for community-built tools
 - Local Nemotron model support (when hardware allows)
 

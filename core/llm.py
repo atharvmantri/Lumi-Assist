@@ -1,8 +1,8 @@
-"""LLM client for JARVIS — HackClub-proxied Nemotron via OpenAI-compatible API.
+"""LLM client for Lumi — HackClub-proxied Nemotron via OpenAI-compatible API.
 
 Responsibilities:
   - Hold the conversation history (rolling N-turn window)
-  - Inject the JARVIS system prompt + live PC context on every call
+  - Inject the Lumi system prompt + live PC context on every call
   - Stream the model's user-facing content tokens
   - Run tool calls through core.executor and loop the model on the results
   - Cap tool-call iterations to MAX_TOOL_LOOPS so the model can't lock itself
@@ -371,13 +371,13 @@ def _smoke_test() -> int:
     print(f"[smoke] model    : {client.model}")
     print(f"[smoke] base_url : {client.base_url}")
     print(f"[smoke] sys_chars: {len(client.system_prompt)}")
-    print(f"[smoke] sending probe: 'Say JARVIS-ONLINE in five words or less.'")
+    print(f"[smoke] sending probe: 'Say Lumi-ONLINE in five words or less.'")
     print("[smoke] reply    : ", end="", flush=True)
 
     t0 = time.perf_counter()
     first_token_at: float | None = None
     try:
-        for token in client.stream("Say JARVIS-ONLINE in five words or less."):
+        for token in client.stream("Say Lumi-ONLINE in five words or less."):
             if first_token_at is None:
                 first_token_at = time.perf_counter() - t0
             sys.stdout.write(token)
@@ -398,7 +398,7 @@ def _smoke_test() -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="JARVIS LLM client")
+    parser = argparse.ArgumentParser(description="Lumi LLM client")
     parser.add_argument("--smoke-test", action="store_true", help="Run end-to-end HackClub smoke test")
     args = parser.parse_args()
 

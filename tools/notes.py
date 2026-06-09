@@ -1,4 +1,4 @@
-"""Quick notes tool — JARVIS can store and retrieve quick notes."""
+"""Quick notes tool — Lumi can store and retrieve quick notes."""
 from __future__ import annotations
 
 import json

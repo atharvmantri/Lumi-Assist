@@ -31,7 +31,7 @@ def http_get(url: str, headers: str = "") -> str:
     import time as _time
     try:
         req = urllib.request.Request(url)
-        req.add_header("User-Agent", "JARVIS/1.0")
+        req.add_header("User-Agent", "Lumi/1.0")
 
         if headers:
             try:
@@ -89,7 +89,7 @@ def http_post(url: str, body: str) -> str:
         data = body.encode("utf-8")
         req = urllib.request.Request(url, data=data, method="POST")
         req.add_header("Content-Type", "application/json")
-        req.add_header("User-Agent", "JARVIS/1.0")
+        req.add_header("User-Agent", "Lumi/1.0")
 
         t0 = _time.perf_counter()
         with urllib.request.urlopen(req, timeout=30) as resp:
@@ -125,7 +125,7 @@ def http_head(url: str) -> str:
     import time as _time
     try:
         req = urllib.request.Request(url, method="HEAD")
-        req.add_header("User-Agent", "JARVIS/1.0")
+        req.add_header("User-Agent", "Lumi/1.0")
 
         t0 = _time.perf_counter()
         with urllib.request.urlopen(req, timeout=10) as resp:

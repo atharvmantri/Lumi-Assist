@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to JARVIS.
+All notable changes to Lumi.
 
 ## [0.3.0] — 2026-06-08 (Improvement Session)
 

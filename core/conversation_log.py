@@ -1,4 +1,4 @@
-"""Conversation logger for JARVIS — records every prompt/response pair.
+"""Conversation logger for Lumi — records every prompt/response pair.
 
 Creates append-only JSONL files so over time we accumulate a dataset of:
   - user input (voice or text)

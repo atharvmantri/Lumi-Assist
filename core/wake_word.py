@@ -1,10 +1,10 @@
-"""Wake word detection for JARVIS — openWakeWord, CPU only.
+"""Wake word detection for Lumi — openWakeWord, CPU only.
 
 Design:
   - Runs continuously on a dedicated background thread, never touching the GPU.
   - Reads 80-ms blocks of 16 kHz mono audio from the default mic.
   - On each block, openWakeWord returns scores in [0, 1] for the loaded models.
-  - When `hey_jarvis` crosses the configured sensitivity threshold, fire callback
+  - When `hey_lumi` crosses the configured sensitivity threshold, fire callback
     (or set a threading.Event) — caller is responsible for any cooldown / locking
     out re-triggers during the response cycle.
 
@@ -53,8 +53,8 @@ BLOCK_SAMPLES = SAMPLE_RATE * BLOCK_MS // 1000   # = 1280 samples
 
 # Maps our config wake_word string to the openWakeWord model key.
 _WAKE_WORD_TO_MODEL = {
-    "hey jarvis": "hey_jarvis",
-    "hey_jarvis": "hey_jarvis",
+    "hey lumi": "hey_lumi",
+    "hey_lumi": "hey_lumi",
     "alexa": "alexa",
     "hey mycroft": "hey_mycroft",
     "hey rhasspy": "hey_rhasspy",
@@ -72,7 +72,7 @@ class WakeWordDetector:
         verbose: bool = True,
     ) -> None:
         cfg = config or load_config()
-        ww_cfg = cfg["jarvis"]
+        ww_cfg = cfg["lumi"]
         self.phrase: str = ww_cfg["wake_word"].strip().lower()
         self.sensitivity: float = float(ww_cfg["wake_word_sensitivity"])
         model_key = _WAKE_WORD_TO_MODEL.get(self.phrase)
@@ -124,7 +124,7 @@ class WakeWordDetector:
 
     def pause(self) -> None:
         """Temporarily stop emitting triggers (mic still reads, just suppressed).
-        Use during JARVIS's own response cycle so its TTS doesn't self-trigger.
+        Use during Lumi's own response cycle so its TTS doesn't self-trigger.
         """
         self._paused.set()
 
@@ -197,7 +197,7 @@ def score_wav(wav_path: str | Path, *, verbose: bool = True) -> tuple[float, lis
     """
     import wave as _wave
     cfg = load_config()
-    phrase = cfg["jarvis"]["wake_word"].strip().lower()
+    phrase = cfg["lumi"]["wake_word"].strip().lower()
     model_key = _WAKE_WORD_TO_MODEL[phrase]
 
     with _wave.open(str(wav_path), "rb") as wf:
@@ -239,7 +239,7 @@ def _live_listen(seconds: float) -> int:
     det = WakeWordDetector(on_trigger=on_trigger)
     det.start()
     t0 = time.monotonic()
-    print(f"[smoke] listening for {seconds:.0f}s — say 'hey jarvis' a few times")
+    print(f"[smoke] listening for {seconds:.0f}s — say 'hey lumi' a few times")
     print(f"[smoke] sensitivity threshold = {det.sensitivity}")
     print(f"[smoke] (heartbeat every 2s shows last block's score)")
     next_beat = t0 + 2.0
@@ -264,7 +264,7 @@ def _live_listen(seconds: float) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="JARVIS wake word (openWakeWord)")
+    parser = argparse.ArgumentParser(description="Lumi wake word (openWakeWord)")
     parser.add_argument("--smoke-test", action="store_true", help="Listen on mic for 30s and print triggers")
     parser.add_argument("--seconds", type=float, default=30.0, help="Listen duration for --smoke-test (default 30)")
     parser.add_argument("--file", metavar="WAV", help="Score a 16kHz mono WAV instead of listening on mic")
@@ -274,7 +274,7 @@ def main() -> None:
         peak, scores = score_wav(args.file)
         # Exit 0 if peak crossed the configured threshold, else 1.
         cfg = load_config()
-        thresh = float(cfg["jarvis"]["wake_word_sensitivity"])
+        thresh = float(cfg["lumi"]["wake_word_sensitivity"])
         triggered = peak >= thresh
         print(f"[result] threshold={thresh}  peak={peak:.3f}  triggered={triggered}")
         raise SystemExit(0 if triggered else 1)

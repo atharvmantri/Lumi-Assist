@@ -60,7 +60,7 @@ def export_conversations_html(days: int = 7) -> str:
             f'<div class="turn">'
             f'<div class="meta">{ts} <span class="mode">{mode}</span> <span class="timing">{total_s:.1f}s</span>{tool_badge}</div>'
             f'<div class="user"><strong>You:</strong> {user}</div>'
-            f'<div class="assistant"><strong>JARVIS:</strong> {assistant}</div>'
+            f'<div class="assistant"><strong>Lumi:</strong> {assistant}</div>'
             f"</div>"
         )
 
@@ -68,7 +68,7 @@ def export_conversations_html(days: int = 7) -> str:
 <html>
 <head>
 <meta charset="utf-8">
-<title>JARVIS Conversations — Last {days} Days</title>
+<title>Lumi Conversations — Last {days} Days</title>
 <style>
   body {{ font-family: -apple-system, Segoe UI, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: #eee; }}
   h1 {{ color: #f0c040; border-bottom: 2px solid #333; padding-bottom: 10px; }}
@@ -84,7 +84,7 @@ def export_conversations_html(days: int = 7) -> str:
 </style>
 </head>
 <body>
-<h1>🤖 JARVIS Conversations</h1>
+<h1>🤖 Lumi Conversations</h1>
 <div class="stats">
   <span>{len(entries)}</span> turns in the last <span>{days}</span> days &middot;
   Generated {datetime.now().strftime('%Y-%m-%d %H:%M')}

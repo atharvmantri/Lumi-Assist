@@ -1,8 +1,8 @@
-# JARVIS Project — Claude Session Guide
+# Lumi Project — Claude Session Guide
 
 ## Quick Context
-This is **JARVIS**, a local-first voice assistant for Windows 11 built by **Atharv**.
-- **Wake word:** "hey jarvis"
+This is **Lumi**, a local-first voice assistant for Windows 11 built by **Atharv**.
+- **Wake word:** "hey lumi"
 - **Architecture:** voice loop (background thread) + system tray + animated overlay (main Qt thread)
 - **Tech stack:** Python 3.11, PyQt6, faster-whisper, Piper TTS, openWakeWord, HackClub API proxy
 
@@ -44,4 +44,4 @@ main.py → voice_loop (wake_word → stt → llm → tts)
 - `run_python` code arg is JSON-encoded — NO f-strings (breaks JSON parser)
 
 ## Conversation Dataset
-Every JARVIS interaction is logged to `data/conversations/`. This is Atharv's intentional training dataset. Do not delete or modify these files.
+Every Lumi interaction is logged to `data/conversations/`. This is Atharv's intentional training dataset. Do not delete or modify these files.

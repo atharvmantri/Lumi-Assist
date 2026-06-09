@@ -1,1 +1,1 @@
-"""JARVIS UI — floating HUD + system tray."""
+"""Lumi UI — floating HUD + system tray."""

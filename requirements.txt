@@ -1,4 +1,4 @@
-# JARVIS — Python 3.11 dependencies
+# Lumi — Python 3.11 dependencies
 # Install on Windows with: py -3.11 -m pip install -r requirements.txt
 # For torch+CUDA, see comment block below.
 

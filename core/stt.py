@@ -1,4 +1,4 @@
-"""Speech-to-text for JARVIS — faster-whisper on CUDA.
+"""Speech-to-text for Lumi — faster-whisper on CUDA.
 
 Two responsibilities:
   - Load a Whisper model once, keep it warm in VRAM
@@ -320,7 +320,7 @@ def _smoke_test() -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="JARVIS STT (faster-whisper on CUDA)")
+    parser = argparse.ArgumentParser(description="Lumi STT (faster-whisper on CUDA)")
     parser.add_argument("--smoke-test", action="store_true", help="Synthesize a test phrase via SAPI and round-trip it")
     parser.add_argument("--transcribe", metavar="WAV", help="Transcribe a specific WAV file")
     parser.add_argument("--record", action="store_true", help="Record from mic until silence, then transcribe")

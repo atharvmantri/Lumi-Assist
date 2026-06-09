@@ -1,7 +1,7 @@
-# JARVIS configuration — see jarvis_voice_assistant_prd.md section 7
+# Lumi configuration — see lumi_voice_assistant_prd.md section 7
 
-jarvis:
-  wake_word: "hey jarvis"
+lumi:
+  wake_word: "hey lumi"
   wake_word_sensitivity: 0.7
 
 stt:

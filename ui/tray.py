@@ -1,11 +1,11 @@
-"""JARVIS system tray + desktop overlay (pure PyQt6).
+"""Lumi system tray + desktop overlay (pure PyQt6).
 
-JARVIS integrates with Windows via:
+Lumi integrates with Windows via:
   - System tray icon (changes color based on state)
   - Bottom-center desktop overlay with animated particles
   - Windows toast notifications (for wake word, errors)
 
-No floating windows. No overlays that block your work. JARVIS lives in the
+No floating windows. No overlays that block your work. Lumi lives in the
 tray and feels like part of Windows, not a separate app.
 
 Uses pure PyQt6 — no pystray conflicts with Qt event loop.
@@ -204,13 +204,13 @@ class TrayManager:
         pixmap = QPixmap()
         pixmap.loadFromData(QByteArray(icon_bytes))
         self._tray_icon = QSystemTrayIcon(QIcon(pixmap), self._app)
-        self._tray_icon.setToolTip("JARVIS — Voice Assistant")
+        self._tray_icon.setToolTip("Lumi — Voice Assistant")
 
         # Create menu
         menu = QMenu()
 
         # Status label (not clickable)
-        status_action = menu.addAction("JARVIS — Idle")
+        status_action = menu.addAction("Lumi — Idle")
         status_action.setEnabled(False)
 
         menu.addSeparator()
@@ -221,7 +221,7 @@ class TrayManager:
 
         menu.addSeparator()
 
-        quit_action = menu.addAction("Quit JARVIS")
+        quit_action = menu.addAction("Quit Lumi")
         quit_action.triggered.connect(self._app.quit)
 
         self._tray_icon.setContextMenu(menu)
@@ -251,7 +251,7 @@ class TrayManager:
         states = [
             (overlay_mod.OverlayState.LISTENING, "Listening...", 2.0),
             (overlay_mod.OverlayState.THINKING, "Thinking...", 2.0),
-            (overlay_mod.OverlayState.RESPONDING, "Hello! I'm JARVIS.", 3.0),
+            (overlay_mod.OverlayState.RESPONDING, "Hello! I'm Lumi.", 3.0),
             (overlay_mod.OverlayState.IDLE, "", 0),
         ]
 
@@ -273,12 +273,12 @@ class TrayManager:
                 self._update_overlay(cmd.state, cmd.text)
                 # Update tray menu status label
                 if hasattr(self, "_status_action"):
-                    label = f"JARVIS — {cmd.state.value.title()}"
+                    label = f"Lumi — {cmd.state.value.title()}"
                     if cmd.text:
                         label += f": {cmd.text[:30]}"
                     self._status_action.setText(label)
             if cmd.show_toast and cmd.text:
-                title = "JARVIS"
+                title = "Lumi"
                 if cmd.state == TrayState.LISTENING:
                     title = "Wake Word Detected"
                 elif cmd.state == TrayState.ERROR:

@@ -1,4 +1,4 @@
-"""Persistent memory tool — JARVIS can remember facts the user tells it."""
+"""Persistent memory tool — Lumi can remember facts the user tells it."""
 from __future__ import annotations
 
 import json
@@ -29,7 +29,7 @@ def _save_memory(data: dict[str, Any]) -> None:
 @tool(
     name="remember",
     description=(
-        "Store a fact or preference so JARVIS remembers it in future conversations. "
+        "Store a fact or preference so Lumi remembers it in future conversations. "
         "Use when the user says 'remember that...', 'my favorite is...', 'I prefer...', "
         "'don't forget...', 'note that...', etc. The fact persists across sessions."
     ),
@@ -64,7 +64,7 @@ def remember(fact: str, category: str = "other") -> str:
 @tool(
     name="recall",
     description=(
-        "Search JARVIS's persistent memory for stored facts and preferences. "
+        "Search Lumi's persistent memory for stored facts and preferences. "
         "Use when the user says 'what do you remember about...', 'what do you know about me', "
         "'do you remember my...', 'what facts have I told you', etc."
     ),

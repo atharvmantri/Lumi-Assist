@@ -117,7 +117,7 @@ def conversation_summary(days: int = 7) -> str:
         f"  Total turns: {total_turns}\n"
         f"  Modes: {mode_str}\n"
         f"  Avg user message: {avg_user:.0f} chars\n"
-        f"  Avg JARVIS response: {avg_response:.0f} chars\n"
+        f"  Avg Lumi response: {avg_response:.0f} chars\n"
         f"  Total tool calls: {total_tools}\n"
         f"  Avg turn time: {avg_time:.1f}s\n"
         f"\nTurns per day:\n{daily_summary}"

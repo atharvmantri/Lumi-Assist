@@ -1,4 +1,4 @@
-"""Proactive voice output — let JARVIS speak on demand."""
+"""Proactive voice output — let Lumi speak on demand."""
 from __future__ import annotations
 
 import threading
@@ -10,7 +10,7 @@ from tools import tool
 @tool(
     name="speak",
     description=(
-        "Speak a text out loud through the system speakers using JARVIS's TTS engine. "
+        "Speak a text out loud through the system speakers using Lumi's TTS engine. "
         "Use this when you want to proactively say something to the user without "
         "waiting for them to ask — e.g. announcing a timer, a reminder, or a "
         "system event. The text should be short (1-2 sentences) and TTS-friendly."
@@ -27,7 +27,7 @@ from tools import tool
     },
 )
 def speak(text: str) -> str:
-    """Speak text using JARVIS's TTS in a background thread."""
+    """Speak text using Lumi's TTS in a background thread."""
     try:
         from core.tts import TTS
     except ImportError:

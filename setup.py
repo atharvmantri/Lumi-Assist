@@ -1,4 +1,4 @@
-"""JARVIS setup wizard — interactive first-run installer.
+"""Lumi setup wizard — interactive first-run installer.
 
 Run:  python setup.py
 
@@ -33,7 +33,7 @@ def run(cmd: list[str], label: str = "") -> bool:
 
 def main() -> int:
     print("=" * 50)
-    print("  JARVIS Setup Wizard")
+    print("  Lumi Setup Wizard")
     print("=" * 50)
     print()
 
@@ -72,7 +72,7 @@ def main() -> int:
          "--index-url", "https://download.pytorch.org/whl/cu121"],
         "Installing torch",
     ):
-        print("  WARNING: torch install may have failed. JARVIS will still work without GPU STT.")
+        print("  WARNING: torch install may have failed. Lumi will still work without GPU STT.")
 
     # 4. Model downloads
     print("\n[4/6] Downloading model weights...")
@@ -134,7 +134,7 @@ def main() -> int:
     print("  Setup complete!")
     print("=" * 50)
     print()
-    print("Run JARVIS with:")
+    print("Run Lumi with:")
     print("  python main.py            # Full voice loop")
     print("  python main.py --type     # Text input mode")
     print("  python main.py --dry-run  # One-shot test")

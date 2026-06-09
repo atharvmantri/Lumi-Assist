@@ -1,4 +1,4 @@
-# JARVIS Tools Reference
+# Lumi Tools Reference
 
 > 263 tools across 90 modules
 
@@ -139,8 +139,8 @@
 
 | Tool | Description |
 |---|---|
-| `conversation_stats` | Get statistics about past JARVIS conversations: total turns, average response length, tools used most frequently, etc |
-| `search_conversations` | Search past JARVIS conversations |
+| `conversation_stats` | Get statistics about past Lumi conversations: total turns, average response length, tools used most frequently, etc |
+| `search_conversations` | Search past Lumi conversations |
 
 ### DNS (dns.py)
 
@@ -172,7 +172,7 @@
 
 | Tool | Description |
 |---|---|
-| `self_test` | Run a quick self-diagnostic to check if JARVIS's core components are working |
+| `self_test` | Run a quick self-diagnostic to check if Lumi's core components are working |
 
 ### Diff (diff.py)
 
@@ -346,14 +346,14 @@
 |---|---|
 | `forget` | Remove a stored memory by its number |
 | `list_memories` | List all stored memories with their categories and timestamps |
-| `recall` | Search JARVIS's persistent memory for stored facts and preferences |
-| `remember` | Store a fact or preference so JARVIS remembers it in future conversations |
+| `recall` | Search Lumi's persistent memory for stored facts and preferences |
+| `remember` | Store a fact or preference so Lumi remembers it in future conversations |
 
 ### Meta (capabilities.py)
 
 | Tool | Description |
 |---|---|
-| `list_capabilities` | List everything JARVIS can do |
+| `list_capabilities` | List everything Lumi can do |
 
 ### Monitoring (monitoring.py)
 
@@ -646,7 +646,7 @@
 
 | Tool | Description |
 |---|---|
-| `speak` | Speak a text out loud through the system speakers using JARVIS's TTS engine |
+| `speak` | Speak a text out loud through the system speakers using Lumi's TTS engine |
 
 ### Weather (weather.py)
 

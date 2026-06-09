@@ -1,16 +1,16 @@
-# JARVIS Quick Start Guide
+# Lumi Quick Start Guide
 
 ## First Time Setup
 1. Double-click `setup.bat` — it will check Python, install dependencies, download the voice model, and run diagnostics
 2. Edit `.env` and add your `HACKCLUB_API_KEY`
-3. Double-click `launch.bat` to start JARVIS
+3. Double-click `launch.bat` to start Lumi
 
-## Once JARVIS is Running
-1. Say **"hey jarvis"** to wake it up
+## Once Lumi is Running
+1. Say **"hey lumi"** to wake it up
 2. Wait for the chime, then speak your request
-3. JARVIS will respond out loud
+3. Lumi will respond out loud
 
-## What JARVIS Can Do
+## What Lumi Can Do
 - **Open apps:** "Open Notepad", "Open Chrome"
 - **Control media:** "Pause music", "Volume up", "Next track"
 - **System info:** "What's my battery?", "How much RAM am I using?"
@@ -41,10 +41,10 @@ python tests/test_quick.py        # Smoke tests
 ```
 
 ## Tray Menu
-Right-click the JARVIS tray icon to:
+Right-click the Lumi tray icon to:
 - See current status
 - Test the overlay animation
-- Quit JARVIS
+- Quit Lumi
 
 ## Configuration
 - `config.yaml` — main settings (don't edit if you want to keep git clean)

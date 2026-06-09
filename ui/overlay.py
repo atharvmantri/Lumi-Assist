@@ -1,6 +1,6 @@
-"""JARVIS desktop overlay — bottom-center animated particles.
+"""Lumi desktop overlay — bottom-center animated particles.
 
-Design: JARVIS lives invisibly on the desktop and only appears at the bottom
+Design: Lumi lives invisibly on the desktop and only appears at the bottom
 center when active. No window chrome, click-through, elegant particle
 animations with flowing golden waveforms.
 

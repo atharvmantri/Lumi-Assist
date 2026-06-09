@@ -1,4 +1,4 @@
-"""Capability listing — JARVIS can describe what it can do."""
+"""Capability listing — Lumi can describe what it can do."""
 from __future__ import annotations
 
 from tools import tool, REGISTRY
@@ -7,7 +7,7 @@ from tools import tool, REGISTRY
 @tool(
     name="list_capabilities",
     description=(
-        "List everything JARVIS can do. Use when the user asks "
+        "List everything Lumi can do. Use when the user asks "
         "'what can you do', 'what are your capabilities', 'help', "
         "'what tools do you have', etc. Returns a categorized summary."
     ),
@@ -47,7 +47,7 @@ def list_capabilities() -> str:
         "weather": "Weather & Time",
     }
 
-    lines = ["JARVIS Capabilities:"]
+    lines = ["Lumi Capabilities:"]
     total = 0
     for mod in sorted(modules, key=lambda m: category_labels.get(m, m)):
         tools_list = modules[mod]

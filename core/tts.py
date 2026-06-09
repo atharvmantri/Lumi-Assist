@@ -1,4 +1,4 @@
-"""Text-to-speech for JARVIS — Piper (ONNX runtime).
+"""Text-to-speech for Lumi — Piper (ONNX runtime).
 
 One responsibility: turn text into spoken audio with low first-chunk latency.
 
@@ -310,7 +310,7 @@ def _smoke_test() -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="JARVIS TTS (Piper)")
+    parser = argparse.ArgumentParser(description="Lumi TTS (Piper)")
     parser.add_argument("--smoke-test", action="store_true", help="Synthesize + play a known phrase")
     parser.add_argument("--say", metavar="TEXT", help="Speak arbitrary text through speakers")
     parser.add_argument("--to", metavar="WAV", help="Write to a WAV instead of playing")

@@ -1,4 +1,4 @@
-"""Tool dispatch + lifecycle for JARVIS.
+"""Tool dispatch + lifecycle for Lumi.
 
 The executor owns the bridge between the LLM and the registered tools:
 
@@ -7,7 +7,7 @@ The executor owns the bridge between the LLM and the registered tools:
   - Every dispatch is timed and logged to logs/executor.log
   - Exceptions are caught and stringified back to the LLM (never crashes the loop)
   - Args are JSON-decoded once per call; bad JSON returns a structured error
-  - EVERY failure is also recorded to the learning store so JARVIS can
+  - EVERY failure is also recorded to the learning store so Lumi can
     recognize repeat-mistake patterns and inject hints + lessons over time
 
 Importing this module triggers `import tools`, which loads every tools/*.py via
@@ -189,7 +189,7 @@ def clear_pending_hints() -> None:
 
 def main() -> None:
     import argparse
-    parser = argparse.ArgumentParser(description="JARVIS executor")
+    parser = argparse.ArgumentParser(description="Lumi executor")
     parser.add_argument("--list", action="store_true", help="List registered tools + descriptions")
     parser.add_argument("--schemas", action="store_true", help="Print full JSON schemas")
     parser.add_argument("--call", metavar="NAME", help="Call a tool directly: --call NAME --args JSON")

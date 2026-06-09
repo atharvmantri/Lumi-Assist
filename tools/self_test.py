@@ -1,4 +1,4 @@
-"""Self-test tool — JARVIS can check its own health on demand."""
+"""Self-test tool — Lumi can check its own health on demand."""
 from __future__ import annotations
 
 import time
@@ -9,7 +9,7 @@ from tools import tool
 @tool(
     name="self_test",
     description=(
-        "Run a quick self-diagnostic to check if JARVIS's core components are working. "
+        "Run a quick self-diagnostic to check if Lumi's core components are working. "
         "Tests: config loading, tool registry, TTS voice model, STT model, "
         "overlay initialization, and audio devices. "
         "Use when the user asks 'are you working', 'run a self test', or "

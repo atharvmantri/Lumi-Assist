@@ -1,1 +1,1 @@
-"""JARVIS core runtime — STT, LLM, TTS, wake word, executor."""
+"""Lumi core runtime — STT, LLM, TTS, wake word, executor."""

@@ -1,13 +1,13 @@
 """Tier-7 hard stress tests against the current free-Mistral model.
 
-Each test sends a prompt, captures the JARVIS reply, and runs one of three
+Each test sends a prompt, captures the Lumi reply, and runs one of three
 validators on it:
   - has_tool(name)   — at least one of these tool names fired
   - replies_contain(substrs) — case-insensitive substrings must all appear
   - replies_dont_contain(substrs) — anti-patterns (e.g. fake JSON tool calls)
 
 A turn is considered a PASS only if the reply is non-empty AND the validator
-passes AND JARVIS didn't bail with the 'I'm stuck' doom-loop message.
+passes AND Lumi didn't bail with the 'I'm stuck' doom-loop message.
 
 Run:  venv/Scripts/python.exe tests/test_hard.py
 """
@@ -70,8 +70,8 @@ TESTS: list[tuple[str, str, Validator]] = [
      "What is 2^53 + 1, and is that result larger than what a normal 64-bit integer can hold?",
      make_validator(must_contain=["9007199254740993"])),
 
-    ("jarvis-uptime",
-     "How many seconds have I been running this JARVIS process? Use run_python to find the current process uptime.",
+    ("lumi-uptime",
+     "How many seconds have I been running this Lumi process? Use run_python to find the current process uptime.",
      make_validator(has_tool=["run_python"], must_contain=["second"])),
 
     # -------- Live data --------
@@ -145,7 +145,7 @@ TESTS: list[tuple[str, str, Validator]] = [
      make_validator(has_tool=["clipboard_write"], must_contain=["giraffe"])),
 
     ("reverse-string",
-     "Reverse the string 'JARVIS is online' and tell me the result. Just the reversed string.",
+     "Reverse the string 'Lumi is online' and tell me the result. Just the reversed string.",
      make_validator(must_contain=["enilno si SIVRAJ"])),
 
     ("meaning-of-life",
@@ -157,8 +157,8 @@ TESTS: list[tuple[str, str, Validator]] = [
      "Use run_python to read the file main.py in this project and tell me its first 3 lines, exactly as they appear.",
      make_validator(has_tool=["run_python"], must_contain=["main"])),
 
-    ("sha256-jarvis",
-     "Use run_python to compute the SHA-256 hash of the string 'jarvis' and tell me the first 8 hex characters.",
+    ("sha256-lumi",
+     "Use run_python to compute the SHA-256 hash of the string 'lumi' and tell me the first 8 hex characters.",
      make_validator(has_tool=["run_python"])),
 
     ("sum-1-to-100",

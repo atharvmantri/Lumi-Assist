@@ -1,4 +1,4 @@
-"""Failure memory + lessons-learned injection for JARVIS.
+"""Failure memory + lessons-learned injection for Lumi.
 
 The system is small but does three things:
 
@@ -14,7 +14,7 @@ The system is small but does three things:
 
 3. PROMPT — on every LLM turn, we read the most recent N unique (tool, error_class)
    pairs and inject them as a "Lessons learned from past failures" section
-   near the top of the system prompt. This means JARVIS sees its own past
+   near the top of the system prompt. This means Lumi sees its own past
    mistakes at the start of every turn, not just when it triggers one.
 
 File format: newline-delimited JSON. One record per line. Easy to grep,
@@ -113,7 +113,7 @@ def _sig_error(error_message: str) -> str:
     msg = error_message or "unknown"
     # Take first line / first sentence
     msg = msg.split("\n", 1)[0].split(".", 1)[0]
-    # Drop line/column numbers ("line 11", "column 3", "(<jarvis-run_python>, line 9)")
+    # Drop line/column numbers ("line 11", "column 3", "(<lumi-run_python>, line 9)")
     msg = re.sub(r"\(?<[^>]+>,\s*line\s+\d+\)?", "", msg)
     msg = re.sub(r"\bline\s+\d+\b", "", msg, flags=re.IGNORECASE)
     msg = _SAFE_ERR_RE.sub(" ", msg)
@@ -315,12 +315,12 @@ def get_store() -> LearningStore:
 
 
 # ============================================================================
-# CLI for inspecting what JARVIS has learned
+# CLI for inspecting what Lumi has learned
 # ============================================================================
 
 def main() -> None:
     import argparse
-    p = argparse.ArgumentParser(description="JARVIS failure memory")
+    p = argparse.ArgumentParser(description="Lumi failure memory")
     p.add_argument("--show", action="store_true", help="Show current lessons + recent mistakes")
     p.add_argument("--tail", type=int, default=20, help="How many recent mistake records to show")
     p.add_argument("--reset", action="store_true", help="Wipe the mistake log (irreversible)")

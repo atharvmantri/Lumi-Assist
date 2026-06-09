@@ -1,4 +1,4 @@
-"""JARVIS tool registry.
+"""Lumi tool registry.
 
 Each tool is a top-level function in one of the tools/*.py modules, decorated
 with @tool(name=..., description=..., parameters=...). Decoration registers

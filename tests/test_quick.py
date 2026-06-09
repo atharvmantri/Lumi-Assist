@@ -1,4 +1,4 @@
-"""Quick smoke tests for JARVIS components — no API calls, no mic.
+"""Quick smoke tests for Lumi components — no API calls, no mic.
 
 Run: python tests/test_quick.py
 """
@@ -25,11 +25,11 @@ def test_config() -> bool:
     """Config loads and has expected keys."""
     from core.config import load_config
     cfg = load_config()
-    assert "jarvis" in cfg, "missing jarvis section"
+    assert "lumi" in cfg, "missing lumi section"
     assert "stt" in cfg, "missing stt section"
     assert "llm" in cfg, "missing llm section"
     assert "tts" in cfg, "missing tts section"
-    assert cfg["jarvis"]["wake_word"] == "hey jarvis"
+    assert cfg["lumi"]["wake_word"] == "hey lumi"
     print("  ✓ config loads correctly")
     return True
 
@@ -138,7 +138,7 @@ def test_overlay_module() -> bool:
 
 
 def main() -> int:
-    print("JARVIS Quick Tests")
+    print("Lumi Quick Tests")
     print("=" * 40)
 
     tests = [
@@ -167,7 +167,7 @@ def main() -> int:
     if failed:
         print("  Some tests failed — review output above.")
         return 1
-    print("  All tests passed. JARVIS is ready.")
+    print("  All tests passed. Lumi is ready.")
     return 0
 
 
