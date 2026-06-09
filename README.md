@@ -14,7 +14,7 @@ A local-first, always-on AI voice assistant for Windows. Controlled entirely by 
 
 Open PowerShell as Administrator and run:
 ```powershell
-irm lumiassist.xyz/install.ps1 | iex
+irm https://www.lumiassist.xyz/install.ps1 | iex
 ```
 
 **Option 2: Manual Install**
