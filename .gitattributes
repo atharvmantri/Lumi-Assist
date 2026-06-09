@@ -1,0 +1,13 @@
+# Line endings
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files
+*.onnx binary
+*.onnx.json text
+*.png binary
+*.wav binary
+*.ico binary
+*.ttf binary
+*.otf binary

@@ -1,0 +1,75 @@
+# ============================================================
+# JARVIS — .gitignore
+# ============================================================
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# ---- Virtual environments ----
+venv/
+.venv/
+env/
+
+# ---- IDE ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ---- Claude Code internal (not for public) ----
+.claude/
+MEMORY.md
+
+# ---- Environment & Secrets (NEVER commit these) ----
+.env
+.env.local
+.env.*.local
+config.local.yaml
+*.key
+*.pem
+
+# ---- Models (large files, download on first run) ----
+models/
+*.onnx
+*.onnx.json
+*.gguf
+*.bin
+*.safetensors
+.huggingface/
+
+# ---- Runtime data (auto-created, user-specific) ----
+data/
+logs/
+*.log
+
+# ---- Piper cache ----
+.piper_cache/
+
+# ---- Build / distribution ----
+*.spec
+MANIFEST
+*.zip
+*.tar.gz
+*.whl
+
+# ---- Misc ----
+*.bak
+*.tmp
+*.orig
+*.rej
+*.patch

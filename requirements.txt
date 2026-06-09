@@ -1,0 +1,57 @@
+# JARVIS — Python 3.11 dependencies
+# Install on Windows with: py -3.11 -m pip install -r requirements.txt
+# For torch+CUDA, see comment block below.
+
+# ===== Core LLM / config =====
+openai>=1.0.0
+python-dotenv>=1.0.0
+PyYAML>=6.0.1
+requests>=2.31.0
+
+# ===== STT =====
+# faster-whisper bundles its own CTranslate2 wheel with CUDA support.
+faster-whisper>=1.0.0
+numpy>=1.26.0,<2.0          # torch 2.2/cu121 prefers numpy 1.x
+
+# CUDA runtime DLLs (Windows) — ctranslate2 dynamically loads cuBLAS + cuDNN
+# at inference time. core/stt.py registers their bin dirs via os.add_dll_directory.
+nvidia-cublas-cu12>=12.0
+nvidia-cudnn-cu12>=9.0,<10
+nvidia-cuda-nvrtc-cu12>=12.0
+
+# ===== Audio I/O =====
+sounddevice>=0.4.6
+# pyaudio>=0.2.14            # optional; sounddevice covers our needs
+
+# ===== TTS =====
+piper-tts>=1.2.0
+
+# ===== Wake word =====
+openwakeword>=0.6.0
+onnxruntime>=1.17.0          # openwakeword + piper backend
+
+# ===== UI =====
+PyQt6>=6.6.0
+
+# ===== PC automation =====
+pyautogui>=0.9.54
+pywinauto>=0.6.8
+keyboard>=0.13.5
+pycaw>=20240910
+comtypes>=1.2.0              # pycaw / pywinauto dependency
+pyperclip>=1.8.2
+Pillow>=10.0.0
+pytesseract>=0.3.10          # also requires Tesseract binary in PATH
+win10toast>=0.9
+
+# ===== Web =====
+duckduckgo-search>=6.0.0
+# (above is the legacy name; we use the renamed `ddgs` package now)
+ddgs>=9.0.0
+
+# ===== Torch =====
+# Install torch separately with the cu121 index — DO NOT add it here.
+# Run:
+#   py -3.11 -m pip install torch==2.2.* --index-url https://download.pytorch.org/whl/cu121
+# faster-whisper does NOT require torch (it uses CTranslate2), but piper-tts
+# and openwakeword can benefit from a CUDA build if you want GPU TTS later.
