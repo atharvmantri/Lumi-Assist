@@ -10,6 +10,15 @@ A local-first, always-on AI voice assistant for Windows. Controlled entirely by 
 
 ### Install
 
+**Option 1: One-Line Installer (Recommended)**
+
+Open PowerShell as Administrator and run:
+```powershell
+irm lumiassist.xyz/install.ps1 | iex
+```
+
+**Option 2: Manual Install**
+
 Download or clone the repo, then double-click `install.bat`. It walks you through:
 
 1. Python 3.11 check (installs if missing via winget)
