@@ -1,474 +1,286 @@
-# JARVIS
+# Lumi
 
-A local-first, always-on AI voice assistant for Windows 11. Controlled entirely by voice through a wake word, JARVIS runs on your machine and can open applications, manage files, browse the web, retrieve system information, set timers, take screenshots, and execute arbitrary code -- all hands-free.
+A local-first, always-on AI voice assistant for Windows. Controlled entirely by voice through a wake word, Lumi runs on your machine and can open applications, manage files, browse the web, retrieve system information, set timers, take screenshots, and execute code — all hands-free.
 
-JARVIS is built around a four-stage pipeline: wake word detection, speech-to-text, a streaming LLM with tool calling, and sentence-streaming text-to-speech. An animated overlay at the bottom center of the screen provides visual feedback across four states. A system tray icon shows the current state at a glance.
+> Say **"hey jarvis"** and talk to your computer like it's a person.
 
-## Table of Contents
-
-- [Quick Start](#quick-start)
-- [Architecture](#architecture)
-- [Hardware Requirements](#hardware-requirements)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Overlay States](#overlay-states)
-- [Tool System](#tool-system)
-- [Conversation Logging](#conversation-logging)
-- [Learning System](#learning-system)
-- [Directory Structure](#directory-structure)
-- [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [Security](#security)
-- [License](#license)
+---
 
 ## Quick Start
 
-### Prerequisites
+### One-line install
 
-- Windows 10 or Windows 11
-- Python 3.11
-- A microphone and speakers
-- An API key for the LLM provider (HackClub proxy or compatible OpenAI-compatible endpoint)
+Paste this into **PowerShell** and press Enter. The installer handles everything:
 
-### Installation
-
-Run the setup script:
-
-```bat
-setup.bat
+```powershell
+irm https://raw.githubusercontent.com/atharvmantri/Lumi-Assist/main/install.ps1 | iex
 ```
 
-This script performs the following steps:
+That's it. When the installer finishes, a **Lumi** icon sits on your desktop. Double-click it and start talking.
 
-1. Verifies Python 3.11 is installed
-2. Creates a virtual environment
-3. Installs all Python dependencies from `requirements.txt`
-4. Downloads the Piper TTS voice model from Hugging Face
-5. Creates required directories (`data/`, `logs/`, `models/`)
-6. Generates a `.env` template for your API key
-7. Runs diagnostics to confirm all components are functional
+---
 
-Alternatively, set up manually:
+### Manual install
 
-```bat
+If you prefer to see every step:
+
+```powershell
+git clone https://github.com/atharvmantri/Lumi-Assist.git
+cd Lumi-Assist
 py -3.11 -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-For GPU-accelerated speech-to-text (requires NVIDIA GPU with CUDA 12.x):
-
-```bat
-pip install torch==2.2.* --index-url https://download.pytorch.org/whl/cu121
-```
-
-### Configuration
-
-Copy the example environment file and add your API key:
-
-```bat
 copy .env.example .env
+# edit .env and paste your API key
+python main.py
 ```
 
-Edit `.env` and set your API key:
+---
+
+### API Key
+
+Lumi uses the HackClub AI proxy (free, no credit card). Get a key at [hackclub.com](https://hackclub.com/) and put it in `.env`:
 
 ```env
-HACKCLUB_API_KEY=your_key_here
+HACKCLUB_API_KEY=sk-hc-v1-...
 ```
 
-### Running
+---
 
-```bat
-python main.py                    # Full voice loop with tray and overlay
-python main.py --type             # Text input mode (no microphone required)
-python main.py --dry-run          # Single test turn without wake word or microphone
-python main.py --no-tray          # Voice loop without system tray (terminal only)
-```
+## Requirements
 
-## Architecture
-
-JARVIS runs two concurrent threads: a background voice loop and a main Qt thread for the system tray and desktop overlay.
-
-```
-main.py
-  |
-  +-- voice_loop (background thread)
-  |     |
-  |     +-- WakeWordDetector  (openWakeWord, continuous listening)
-  |     +-- STT               (faster-whisper, GPU or CPU)
-  |     +-- LLMClient         (OpenAI-compatible API, streaming + tool calls)
-  |     +-- TTS               (Piper, sentence-streaming synthesis)
-  |
-  +-- TrayManager (main Qt thread)
-  |     +-- QSystemTrayIcon   (color-coded state indicator)
-  |     +-- DesktopOverlay    (bottom-center animated particles)
-  |     +-- ToastNotifier     (Windows notifications)
-  |
-  +-- ConversationLogger      (auto-logs every turn to data/conversations/)
-```
-
-### Component Responsibilities
-
-| Component | Module | Function |
+| | Minimum (CPU only) | Recommended (GPU) |
 |---|---|---|
-| Wake word | `core/wake_word.py` | Continuous openWakeWord listening with cooldown and pause/resume |
-| Speech-to-text | `core/stt.py` | faster-whisper transcription with VAD filter and mic capture |
-| LLM | `core/llm.py` | Streaming chat with tool execution, history window, and lesson injection |
-| Text-to-speech | `core/tts.py` | Piper TTS with sentence-level streaming and markdown cleanup |
-| Tool executor | `core/executor.py` | Dispatch, timing, logging, and failure hint generation |
-| Learning | `core/learning.py` | Persistent failure memory with lesson injection into system prompt |
-| Overlay | `ui/overlay.py` | 600x220 frameless, click-through, always-on-top animated widget |
-| Tray | `ui/tray.py` | Pure PyQt6 system tray with state-synchronized icon colors |
+| **OS** | Windows 10 / 11 | Windows 11 |
+| **CPU** | Any x86-64, 2+ cores | Quad-core or better |
+| **GPU** | None | NVIDIA, **5 GB+ VRAM** (GTX 1060 6GB, RTX 2060, etc.) |
+| **RAM** | 4 GB | 8 GB |
+| **Disk** | 3 GB free | 5 GB free |
+| **Python** | 3.11 | 3.11 |
+| **Mic / Speakers** | Any | Any |
 
-## Hardware Requirements
+Everything runs locally — the only external dependency is the LLM API call. On CPU, speech-to-text is slower but fully functional. The TTS engine (Piper) runs faster than real-time on CPU and does not need a GPU.
 
-### Minimum (CPU-only)
+---
 
-| Component | Requirement |
-|---|---|
-| OS | Windows 10 or 11 |
-| CPU | Any modern x86-64 processor |
-| RAM | 8 GB |
-| Storage | 5 GB free (for model downloads) |
-| Python | 3.11 |
-| Microphone | Any working input device |
-| Speakers | Any working output device |
+## How It Works
 
-On CPU-only hardware, speech-to-text will be slower than real-time and TTS will run at reduced speed. The wake word detector and overlay have negligible CPU overhead.
-
-### Recommended (GPU-accelerated)
-
-| Component | Requirement |
-|---|---|
-| GPU | NVIDIA RTX 3060 12GB or equivalent |
-| RAM | 16 GB or more |
-| Storage | 10 GB free |
-| CUDA | 12.x with cuBLAS and cuDNN |
-
-With a capable GPU, speech-to-text runs faster than real-time and all three model stages (wake word, STT, TTS) can operate concurrently without contention.
-
-### GPU Configuration
-
-The `config.yaml` file configures each component's compute target independently:
-
-```yaml
-stt:
-  device: "cuda"              # Set to "cpu" for CPU-only
-  compute_type: "float16"     # Set to "int8" for lower VRAM usage
-
-tts:
-  device: "cpu"               # Piper is faster-than-realtime on CPU
+```
+Wake word (openWakeWord, CPU)
+  │
+  ▼
+Speech-to-text (faster-whisper, GPU or CPU)
+  │
+  ▼
+LLM (streaming, tool-calling, via HackClub API)
+  │
+  ▼
+Text-to-speech (Piper, CPU, sentence-streaming)
+  │
+  ▼
+Speakers
 ```
 
-The LLM runs entirely on a remote API and does not use local GPU resources.
+Two threads run concurrently:
+
+| Thread | Runs | Manages |
+|---|---|---|
+| **Voice loop** | Background thread | Wake word → STT → LLM → TTS pipeline |
+| **Tray + overlay** | Main Qt thread | System tray icon, bottom-center animated overlay, Windows toast notifications |
+
+---
+
+## Overlay
+
+A frameless, click-through widget sits at the bottom center of your screen above the taskbar. It is invisible by default and appears with a fade animation when Lumi is active.
+
+| State | Appearance | When |
+|---|---|---|
+| **Idle** | *(hidden)* | Default — Lumi is listening for the wake word |
+| **Listening** | Golden waveform bars | Wake word detected, waiting for your speech |
+| **Thinking** | Blue glowing orb with rotating hexagonal pattern | Processing — STT transcription or LLM reasoning |
+| **Responding** | Golden particle swirl with response text | Speaking the reply through speakers |
+
+The tray icon changes color to match: grey (idle), red (listening), purple (thinking), green (responding).
+
+---
 
 ## Configuration
 
-### Main Configuration (`config.yaml`)
-
-All user-tunable settings live in `config.yaml`. Key sections:
+All settings live in `config.yaml`. For personal overrides that stay off git, create `config.local.yaml` — it deep-merges on top of the base config:
 
 ```yaml
+# config.local.yaml
+tts:
+  voice: "en_US-amy-medium"      # switch voice
+  speed: 1.1                     # slightly faster
+stt:
+  model: "large-v3-turbo"        # smaller, faster whisper model
 jarvis:
-  wake_word: "hey jarvis"
-  wake_word_sensitivity: 0.7    # Lower = more sensitive (0.3-0.9)
-
-stt:
-  model: "large-v3"             # Whisper model variant
-  device: "cuda"                # "cuda" or "cpu"
-  compute_type: "float16"       # "float16", "int8", or "float32"
-  silence_threshold_ms: 1500    # Milliseconds of silence to end recording
-  language: null                # null = auto-detect, or set to "en", etc.
-
-llm:
-  provider: "hackclub"
-  api_key_env: "HACKCLUB_API_KEY"
-  model: "openrouter/free"
-  base_url: "https://ai.hackclub.com/proxy/v1"
-  max_tokens: 2048
-  temperature: 0.7
-  history_turns: 20             # Rolling conversation window
-
-tts:
-  engine: "piper"
-  voice: "en_GB-southern_english_female-low"
-  device: "cpu"
-  speed: 1.0
+  wake_word_sensitivity: 0.5     # lower = more sensitive
 ```
 
-### Local Overrides (`config.local.yaml`)
+The full configuration reference:
 
-Create `config.local.yaml` for personal overrides. This file is git-ignored and takes precedence over `config.yaml` through deep merge:
-
-```yaml
-tts:
-  voice: "en_US-amy-medium"
-  speed: 1.1
-stt:
-  model: "large-v3-turbo"
-```
-
-### System Prompt (`prompts/system.md`)
-
-The system prompt controls JARVIS's behavior, tone, tool selection priorities, and safety rules. Edit this file to customize how JARVIS responds and interacts with tools.
-
-## Usage
-
-### Voice Mode
-
-1. Start JARVIS with `python main.py`
-2. Wait for the tray icon to appear (grey = idle)
-3. Say "hey jarvis" to wake the assistant
-4. A chime confirms wake word detection
-5. Speak your request; JARVIS will respond out loud
-
-### Text Mode
-
-```bat
-python main.py --type
-```
-
-Type messages directly without a microphone. Useful for testing or environments where voice is impractical.
-
-### Dry Run
-
-```bat
-python main.py --dry-run
-```
-
-Runs a single complete turn (STT synthesis, LLM call, TTS playback) without listening for wake word or requiring a microphone. Confirms the full pipeline is functional.
-
-### Diagnostics
-
-```bat
-python -m core.diagnostics
-```
-
-Runs a health check across nine components: Python version, configuration, environment variables, pip packages, Piper voice model, Whisper model snapshot, audio devices, screen capture, and overlay initialization.
-
-## Overlay States
-
-The desktop overlay appears at the bottom center of the primary screen, above the taskbar. It is frameless, translucent, and click-through so it does not interfere with any work.
-
-| State | Visual | Trigger |
+| Setting | Default | Notes |
 |---|---|---|
-| Idle | Invisible | Default state; overlay is hidden |
-| Listening | Golden waveform bars with multi-harmonic sine modulation | Wake word detected |
-| Thinking | Blue glowing hexagonal orb with concentric pulse rings and orbiting dots | Processing the request (STT or LLM active) |
-| Responding | Golden particle swirl with flowing waveform outline and response text bubble | Speaking the reply through TTS |
+| `jarvis.wake_word` | `"hey jarvis"` | Wake phrase |
+| `jarvis.wake_word_sensitivity` | `0.7` | Trigger threshold, 0.3–0.9 |
+| `stt.model` | `"large-v3"` | Whisper model: `tiny`, `small`, `medium`, `large-v3`, `large-v3-turbo` |
+| `stt.device` | `"cuda"` | `"cuda"` for GPU, `"cpu"` for CPU-only |
+| `stt.compute_type` | `"float16"` | `"float16"` (GPU), `"int8"` (low VRAM), `"float32"` (CPU) |
+| `tts.voice` | `en_GB-southern_english_female-low` | Piper voice name |
+| `tts.device` | `"cpu"` | Piper is fast enough on CPU |
+| `llm.model` | `"openrouter/free"` | Model on the HackClub proxy |
+| `llm.history_turns` | `20` | Rolling conversation memory window |
 
-State transitions include a 400ms fade animation. The overlay emits a particle burst on activation from the idle state. The tray icon changes color to match the current overlay state.
+---
 
-## Tool System
+## What Lumi Can Do
 
-JARVIS has access to a registry of tools that the LLM can call during conversation. Tools are registered via a decorator in `tools/*.py` modules and are auto-discovered at startup.
+Lumi has **260+ built-in tools** the LLM can call during conversation. A selection:
 
-### Available Tool Categories
+| Category | Examples |
+|---|---|
+| **Apps** | Open Notepad, focus a window, list running apps |
+| **Files** | Search, read, write, organize, hash, compare, find duplicates |
+| **System** | CPU/RAM/battery stats, processes, uptime, disk usage |
+| **Media** | Play/pause music, volume control, keyboard shortcuts, mouse control |
+| **Web** | DuckDuckGo search, fetch pages, ping hosts, speed test, DNS lookup |
+| **Productivity** | Todo lists, notes, persistent memory, timers, calendar, weather |
+| **Screen** | Screenshots, OCR text from screen, image comparison |
+| **Code** | Arbitrary Python execution, shell commands, file diff, regex |
+| **System ops** | Windows services, scheduled tasks, startup programs, firewall rules |
 
-- **Application control** -- launch apps, focus windows, list open windows
-- **File operations** -- read, write, search, organize, compare, hash files
-- **System information** -- CPU, RAM, battery, disk, GPU, processes, uptime
-- **Media control** -- play/pause, next/previous track, volume, keyboard shortcuts
-- **Web and network** -- search, fetch pages, ping, speed test, DNS lookup
-- **Productivity** -- tasks/todos, notes, persistent memory, timers, calendar
-- **Screen** -- screenshots, OCR, image comparison, ASCII art conversion
-- **Code execution** -- arbitrary Python, shell commands, file diff
-- **System management** -- services, scheduled tasks, startup programs, firewall
+Run `list_capabilities` in conversation to see the full catalog, or browse `docs/TOOLS.md`.
 
-A complete tool reference is available in `docs/TOOLS.md`.
+---
 
-### Adding a Tool
+## Conversation Logging
 
-Create a new Python file in the `tools/` directory:
+Every interaction is automatically saved to `data/conversations/YYYY-MM-DD.jsonl`. Each entry records the user input, the full assistant response, any tools called with arguments and results, and timing metrics.
+
+The logs stay entirely on your machine (git-ignored). Load them programmatically:
+
+```python
+from core.conversation_log import load_dataset
+entries = load_dataset(days=7)
+print(f"{len(entries)} turns in the last 7 days")
+```
+
+---
+
+## Learning From Mistakes
+
+When a tool call fails, Lumi records the error. If the same error pattern recurs, the model receives a hint suggesting an alternative approach. Recent failure summaries are also injected into the system prompt so Lumi avoids repeating known mistakes across sessions.
+
+View what Lumi has learned:
+
+```powershell
+python -m core.learning --show
+```
+
+---
+
+## Testing
+
+```powershell
+python tests/test_quick.py          # Smoke tests (config, tools, overlay, TTS cleaning)
+python -m core.diagnostics           # Health check (9 components)
+python -m core.llm --smoke-test      # LLM connectivity
+python -m core.stt --smoke-test      # STT round-trip
+python -m core.tts --smoke-test      # TTS synthesis
+python -m core.wake_word --smoke-test  # Wake word (30s mic listen)
+python -m core.executor --list       # List all registered tools
+```
+
+---
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| Wake word not detecting | Lower `wake_word_sensitivity` to `0.5` in `config.yaml` |
+| Overlay not visible | Right-click tray icon → **Test Overlay** to cycle through states |
+| TTS silent | Verify voice model exists in `models/piper/` |
+| STT too slow | Set `stt.device: "cuda"` in `config.yaml` (requires NVIDIA GPU) |
+| LLM errors | Check `.env` has a valid `HACKCLUB_API_KEY` |
+| No audio devices | Run `python -m core.diagnostics` to list available devices |
+
+---
+
+## Adding Tools
+
+Create a file in `tools/` — it auto-registers on startup:
 
 ```python
 from tools import tool
 
 @tool(
     name="my_tool",
-    description="A brief description shown to the LLM.",
+    description="What this tool does.",
     parameters={
         "type": "object",
         "properties": {
-            "arg_name": {
-                "type": "string",
-                "description": "Description of this argument.",
-            },
+            "arg": {"type": "string", "description": "An argument."},
         },
-        "required": ["arg_name"],
+        "required": ["arg"],
     },
 )
-def my_tool(arg_name: str) -> str:
-    # Implementation
-    return f"Result: {arg_name}"
+def my_tool(arg: str) -> str:
+    return f"Result: {arg}"
 ```
 
-The tool is automatically registered on import. The return value is what the LLM sees as the tool result. Handle errors by returning error messages rather than raising exceptions -- the executor catches unhandled exceptions and reports them to the model.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
-### Safety Model
-
-The system prompt instructs JARVIS to request confirmation before any destructive or irreversible action, including file deletion, drive formatting, system setting changes, or data transmission beyond simple GET requests. Read-only operations execute without confirmation.
-
-## Conversation Logging
-
-Every interaction is automatically logged to `data/conversations/YYYY-MM-DD.jsonl`. Each entry records the user's input, the assistant's full response, any tools called with their arguments and results, timing metrics, and the interaction mode (voice, text, or dry-run).
-
-The conversation log is git-ignored and remains entirely on your machine. It can be loaded programmatically:
-
-```python
-from core.conversation_log import load_dataset
-
-entries = load_dataset(days=7)
-print(f"{len(entries)} turns in the last 7 days")
-```
-
-## Learning System
-
-JARVIS maintains a persistent record of tool failures. When a tool call fails, the error is logged with a signature of the arguments and error type. If the same error pattern recurs, JARVIS receives a hint at runtime suggesting an alternative approach. On every turn, the system prompt includes a summary of recent failure patterns so the model can avoid repeating known mistakes.
-
-View learned lessons:
-
-```bat
-python -m core.learning --show
-python -m core.learning --tail 20
-```
+---
 
 ## Directory Structure
 
 ```
-jarvis/
-  main.py                     Entry point, voice loop, text mode
+Lumi-Assist/
+  main.py                     Entry point — voice loop + tray
   config.yaml                 Main configuration
+  install.ps1                 One-line PowerShell installer
   requirements.txt            Python dependencies
-  setup.bat                   One-command setup installer
-  launch.bat                  Quick launcher
   .env.example                API key template
-  .env                        API key (git-ignored, not in repo)
-  .gitignore                  Git exclusions
 
-  core/
-    config.py                 Configuration loading with local override support
-    llm.py                    LLM client with streaming, tool execution, history
-    stt.py                    Whisper STT with VAD and microphone capture
+  core/                       Pipeline components
+    llm.py                    Streaming LLM client with tool execution
+    stt.py                    Whisper STT + mic capture
     tts.py                    Piper TTS with sentence streaming
-    wake_word.py              openWakeWord background listener
-    executor.py               Tool dispatch, timing, and error handling
-    learning.py               Failure memory and lesson injection
-    conversation_log.py       Automatic conversation dataset builder
-    diagnostics.py            Component health check
+    wake_word.py              openWakeWord detector
+    executor.py               Tool dispatch + failure learning
+    learning.py               Persistent failure memory
+    conversation_log.py       Auto-logging every turn
+    diagnostics.py            Health check
 
-  ui/
-    overlay.py                Bottom-center animated overlay widget
-    tray.py                   System tray manager (pure PyQt6)
+  ui/                         Desktop interface
+    overlay.py                Bottom-center animated particles
+    tray.py                   System tray (pure PyQt6)
 
-  tools/                      Tool modules (auto-discovered)
-    apps.py                   Application launching and window focus
-    screen.py                 Screenshots and OCR
-    system.py                 Clipboard, notifications, volume
-    python_exec.py            Arbitrary Python execution
-    ...                       Additional tool modules
-
-  prompts/
-    system.md                 JARVIS system prompt
-
-  tests/
-    test_quick.py             Smoke tests
-    test_tools_e2e.py         End-to-end tool invocation tests
-
-  data/                       Auto-created at runtime (git-ignored)
-    conversations/            Daily JSONL conversation logs
-
-  logs/                       Auto-created at runtime (git-ignored)
-    executor.log              Tool dispatch log
-    learning/                 Failure memory records
-    screenshots/              Captured screenshots
+  tools/                      91 tool modules, 260+ tools
+  prompts/system.md           System prompt
+  tests/                      Smoke and E2E tests
+  data/                       Auto-created — conversation dataset
 ```
 
-## Testing
-
-Run the smoke test suite:
-
-```bat
-python tests/test_quick.py
-```
-
-This verifies configuration loading, learning store initialization, conversation logging, TTS text cleaning, tool registration, and overlay module initialization.
-
-Individual component smoke tests:
-
-```bat
-python -m core.llm --smoke-test         # LLM connectivity and streaming
-python -m core.stt --smoke-test          # STT round-trip (synthesizes via SAPI)
-python -m core.tts --smoke-test          # TTS synthesis and playback
-python -m core.wake_word --smoke-test    # Wake word detection (30s mic listen)
-python -m core.executor --list           # List all registered tools
-python -m core.diagnostics               # Full component health check
-```
-
-## Troubleshooting
-
-### Wake word not detecting
-
-Lower the `wake_word_sensitivity` value in `config.yaml`. The default is `0.7`; try `0.5` if it is not responding reliably. Test with `python -m core.wake_word --smoke-test`.
-
-### Overlay not visible
-
-Right-click the tray icon and select "Test Overlay" to cycle through all four states. If the overlay does not appear, run `python -m core.diagnostics` to verify Qt initialization.
-
-### TTS not working
-
-Verify the Piper voice model exists in `models/piper/`. The default voice is `en_GB-southern_english_female-low`. If the model file is missing, re-run `setup.bat` or download it manually from Hugging Face.
-
-### STT running slowly
-
-Confirm the Whisper model is loaded on GPU. In `config.yaml`, set `stt.device` to `"cuda"` and `stt.compute_type` to `"float16"`. Run `python -m core.stt --smoke-test` to verify transcription speed.
-
-### LLM errors
-
-Check that `HACKCLUB_API_KEY` is set in `.env`. Test connectivity with `python -m core.llm --smoke-test`. If the API key is invalid or the service is unavailable, the LLM client will raise an error that surfaces as a tray notification and spoken message.
-
-### "No audio devices found"
-
-Ensure a default microphone is configured in Windows Sound settings. Run `python -m core.diagnostics` to list available input and output devices.
-
-## Contributing
-
-See `CONTRIBUTING.md` for development setup, coding guidelines, and pull request process. Briefly:
-
-1. Fork the repository
-2. Create a feature branch
-3. Add or modify tools in `tools/`
-4. Run `python tests/test_quick.py` to verify
-5. Submit a pull request
-
-### Adding Tools
-
-Tools are self-registering Python functions decorated with `@tool`. Place the file in `tools/` and it is automatically available on next startup. See the tool system section above for the decorator format.
+---
 
 ## Security
 
-### Execution Model
+Lumi can execute arbitrary Python and shell commands on your machine. Only run it on personal hardware in trusted environments. Your `.env`, conversation logs, and audio recordings never leave your machine.
 
-JARVIS can execute arbitrary Python code and shell commands through the `run_python` and `run_command` tools. This is the mechanism that enables PC control, but it also means JARVIS should only be run on personal machines in trusted environments.
+Destructive operations (file deletion, shutdown, system setting changes) require your explicit voice confirmation before executing.
 
-### Protected Data
+See [SECURITY.md](SECURITY.md) for the full policy.
 
-The following are excluded from the repository and remain on your machine:
-
-- `.env` -- contains your API key
-- `config.local.yaml` -- personal configuration overrides
-- `data/` -- conversation logs and user data
-- `logs/` -- audio recordings, executor logs, learning data
-- `models/` -- downloaded model weights
-- `.claude/` -- Claude Code session state
-
-### Tool Safety
-
-Destructive operations require explicit user confirmation before execution. The system prompt instructs JARVIS to state what it is about to do and wait for approval. Tool errors are caught and reported rather than causing the voice loop to crash.
-
-See `SECURITY.md` for the complete security policy.
+---
 
 ## License
 
-MIT License. See `LICENSE` for details.
+MIT. See [LICENSE](LICENSE).
+
+---
+
+*Built by [Atharv](https://github.com/atharvmantri).*

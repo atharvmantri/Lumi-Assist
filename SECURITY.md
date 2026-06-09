@@ -2,30 +2,40 @@
 
 ## Architecture Risks
 
-JARVIS can **execute arbitrary Python code and shell commands** on your machine via the `run_python` and `run_command` tools. This is intentional — it's what lets JARVIS control your PC — but it also means:
+Lumi can **execute arbitrary Python code and shell commands** on your machine via the `run_python` and `run_command` tools. This is what enables PC control, but it also means:
 
-- **Don't run JARVIS on a shared or production machine.** Only use it on your personal PC.
-- **Don't expose JARVIS to untrusted input.** The wake word and mic are local, but the LLM runs via an external API. Your prompts and conversation history are sent to the LLM provider.
-- **Keep your API key secret.** The `HACKCLUB_API_KEY` in `.env` should never be committed or shared.
+- **Only run Lumi on your personal PC.** Do not install it on shared, production, or multi-user machines.
+- **The LLM runs via an external API.** Your prompts and conversation history are sent to the LLM provider (HackClub proxy). Do not paste sensitive information into voice commands.
+- **Keep your API key secret.** The `HACKCLUB_API_KEY` in `.env` should never be committed, shared, or exposed in screenshots.
 
-## What We Protect
+## What Stays Private
 
-- `.env` is git-ignored — never commit API keys
-- `config.local.yaml` is git-ignored — local overrides stay private
-- `data/` is git-ignored — conversation logs are private
-- `logs/` audio files are git-ignored — your voice data stays local
+The following are git-ignored and never leave your machine:
+
+| Path | What it contains |
+|---|---|
+| `.env` | Your API key |
+| `config.local.yaml` | Personal configuration overrides |
+| `data/` | Conversation logs and user data |
+| `logs/` | Audio recordings, executor logs, failure memory |
+| `.claude/` | Development session state |
 
 ## Reporting a Vulnerability
 
-If you find a security issue, please open an issue or contact the maintainer directly. We'll respond within 48 hours.
+Open an issue or contact the maintainer. We will respond within 48 hours.
 
 ## Safe Defaults
 
-- Destructive operations (deleting files, shutting down) require user confirmation
-- Tool errors are caught and reported to the LLM — they don't crash the loop
-- The overlay is click-through — it can't intercept your mouse
+- Destructive operations (file deletion, system shutdown, setting changes) require explicit user confirmation before executing
+- Tool errors are caught and reported to the LLM rather than crashing the voice loop
+- The overlay is click-through — it cannot intercept mouse events or keyboard input
 - No data is sent to external services except LLM API calls
+- The installer downloads models only from Hugging Face (trusted source)
 
-## Dependencies
+## Supply Chain
 
-Run `pip audit` periodically to check for known vulnerabilities in dependencies.
+All dependencies are installed from PyPI. The installer does not execute unsigned scripts or download executables. Model weights are downloaded from Hugging Face's official `rhassys/piper-voices` and `Systran/faster-whisper` repositories.
+
+## Auditing
+
+Run `pip audit` periodically to check for known vulnerabilities in installed dependencies.
