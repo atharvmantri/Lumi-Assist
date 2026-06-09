@@ -1,8 +1,8 @@
 # Lumi configuration — see lumi_voice_assistant_prd.md section 7
 
 lumi:
-  wake_word: "hey lumi"
-  wake_word_sensitivity: 0.7
+  wake_word: "hey computer"
+  wake_word_sensitivity: 0.5
 
 stt:
   model: "large-v3"           # Options: tiny, base, small, medium, large-v3, large-v3-turbo

@@ -7,10 +7,12 @@ Right-click tray icon for quick actions.
 from __future__ import annotations
 
 import io
+import os
 import sys
 import threading
 import time
 from enum import Enum
+from pathlib import Path
 
 import numpy as np
 
@@ -18,13 +20,13 @@ if sys.platform == "win32" and hasattr(sys.stdout, "buffer"):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", line_buffering=True)
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", line_buffering=True)
 
-from PyQt6.QtCore import Qt, QTimer, QSettings
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QAction, QFont, QIcon, QPixmap, QTextCursor
 from PyQt6.QtWidgets import (
     QApplication, QComboBox, QDoubleSpinBox, QFormLayout, QFrame,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox,
     QPushButton, QScrollArea, QSpinBox, QSystemTrayIcon, QTabWidget,
-    QTextEdit, QVBoxLayout, QWidget, QCheckBox,
+    QTextEdit, QVBoxLayout, QWidget,
 )
 
 from core.config import PROJECT_ROOT, load_config, CONFIG_PATH
@@ -44,39 +46,73 @@ class State(Enum):
 
 
 PROVIDERS = {
-    "HackClub (Free)": {"base_url": "https://ai.hackclub.com/proxy/v1", "model": "openrouter/free", "link": "https://ai.hackclub.com/"},
-    "OpenRouter": {"base_url": "https://openrouter.ai/api/v1", "model": "openrouter/auto", "link": "https://openrouter.ai/"},
-    "OpenAI": {"base_url": "https://api.openai.com/v1", "model": "gpt-4o", "link": "https://openai.com/"},
-    "Anthropic (Claude)": {"base_url": "https://api.anthropic.com/v1", "model": "claude-sonnet-4-20250514", "link": "https://anthropic.com/"},
-    "Google (Gemini)": {"base_url": "https://generativelanguage.googleapis.com/v1beta/openai/", "model": "gemini-2.5-pro", "link": "https://ai.google.dev/"},
+    "HackClub (Free)": {"base_url": "https://ai.hackclub.com/proxy/v1", "model": "openrouter/free", "link": "https://ai.hackclub.com/", "models": None},
+    "OpenRouter": {"base_url": "https://openrouter.ai/api/v1", "model": "openrouter/auto", "link": "https://openrouter.ai/", "models": None},
+    "OpenAI": {"base_url": "https://api.openai.com/v1", "model": "gpt-4o", "link": "https://openai.com/",
+        "models": ["gpt-4o", "gpt-4o-mini", "gpt-4.5-preview", "o1", "o1-mini", "o3-mini"]},
+    "Anthropic (Claude)": {"base_url": "https://api.anthropic.com/v1", "model": "claude-sonnet-4-20250514", "link": "https://anthropic.com/",
+        "models": ["claude-sonnet-4-20250514", "claude-opus-4-20250514", "claude-haiku-4-20250514", "claude-3-7-sonnet-20250219", "claude-3-5-sonnet-20241022"]},
+    "Google (Gemini)": {"base_url": "https://generativelanguage.googleapis.com/v1beta/openai/", "model": "gemini-2.5-pro", "link": "https://ai.google.dev/",
+        "models": ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]},
 }
 
 
+def _get_icon_path():
+    """Find the best icon from logos/."""
+    logos = Path(__file__).resolve().parent / "logos"
+    for name in ["favicon.ico", "favicon.png", "android-chrome-192x192.png"]:
+        p = logos / name
+        if p.exists():
+            return str(p)
+    return None
+
+
 def _make_icon(color: str) -> QIcon:
+    """Create a state-colored tray icon from the Lumi logo."""
     from PIL import Image, ImageDraw
-    img = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
+    # Color mapping
     colors = {
-        "grey": (150, 150, 150, 255),
-        "blue": (0, 180, 255, 255),
-        "red": (255, 60, 60, 255),
-        "purple": (124, 58, 237, 255),
-        "green": (0, 220, 150, 255),
+        "grey": (150, 150, 150),
+        "blue": (0, 180, 255),
+        "red": (255, 60, 60),
+        "purple": (124, 58, 237),
+        "green": (0, 220, 150),
     }
-    fill = colors.get(color, (150, 150, 150, 255))
+    fill = colors.get(color, (150, 150, 150))
 
     # Dark rounded background
-    draw.rounded_rectangle([2, 2, 46, 46], radius=8, fill=(26, 26, 46, 220), outline=fill, width=2)
+    draw.rounded_rectangle([2, 2, 62, 62], radius=12, fill=(26, 26, 46, 230))
 
-    # Golden waveform burst
-    cx, cy = 24, 22
-    rays = [(0, -14, 0, 10), (0, 10, 0, 6), (-12, 0, 8, 0), (8, 0, 6, 0),
-            (-8, -8, 5, 5), (5, -8, 4, 4), (-8, 8, 5, 5), (5, 8, 4, 4)]
+    # Draw the waveform burst in the state color
+    cx, cy = 32, 32
+    r = 16
+    rays = [
+        (0, -r*1.3, 0, r*0.7),
+        (0, r*0.6, 0, r*0.4),
+        (-r*1.1, 0, r*0.8, 0),
+        (r*0.7, 0, r*0.6, 0),
+        (-r*0.8, -r*0.9, r*0.55, r*0.55),
+        (r*0.5, -r*0.8, r*0.4, r*0.5),
+        (-r*0.8, r*0.9, r*0.55, r*0.55),
+        (r*0.5, r*0.8, r*0.4, r*0.5),
+        (-r*0.55, -r*1.1, r*0.4, r*0.85),
+        (r*0.35, -r*1.0, r*0.3, r*0.7),
+        (-r*0.55, r*1.1, r*0.4, r*0.85),
+        (r*0.35, r*1.0, r*0.3, r*0.7),
+        (-r*1.0, -r*0.55, r*0.7, r*0.4),
+        (-r*0.9, r*0.55, r*0.65, r*0.4),
+        (r*0.6, -r*0.55, r*0.45, r*0.4),
+        (r*0.6, r*0.55, r*0.45, r*0.4),
+    ]
     for i, (x1, y1, x2, y2) in enumerate(rays):
-        c = (240, 165, 0) if i % 2 == 0 else (200, 140, 0)
-        draw.line([cx + x1, cy + y1, cx + x2, cy + y2], fill=c, width=2)
-    draw.ellipse([cx - 1, cy - 1, cx + 1, cy + 1], fill=(240, 165, 0))
+        c = fill if i % 2 == 0 else (int(fill[0]*0.75), int(fill[1]*0.75), int(fill[2]*0.75))
+        w = 3 if i < 8 else 2
+        draw.line([int(cx + x1), int(cy + y1), int(cx + x2), int(cy + y2)], fill=c + (255,), width=w)
+
+    draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=fill + (255,))
 
     from PyQt6.QtCore import QByteArray
     buf = io.BytesIO()
@@ -84,6 +120,14 @@ def _make_icon(color: str) -> QIcon:
     pm = QPixmap()
     pm.loadFromData(QByteArray(buf.getvalue()))
     return QIcon(pm)
+
+
+def _load_app_icon() -> QIcon | None:
+    """Load the actual Lumi favicon for window icon."""
+    path = _get_icon_path()
+    if path:
+        return QIcon(path)
+    return None
 
 
 class VoiceEngine:
@@ -167,10 +211,9 @@ class SettingsWindow(QMainWindow):
         self.setWindowTitle("Lumi — Settings")
         self.setMinimumSize(600, 500)
         self.resize(650, 550)
-        try:
-            self.setWindowIcon(_make_icon("grey"))
-        except:
-            pass
+        icon = _load_app_icon()
+        if icon:
+            self.setWindowIcon(icon)
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -206,6 +249,18 @@ class SettingsWindow(QMainWindow):
         self.provider_combo.addItem("Custom")
         layout.addRow("Provider:", self.provider_combo)
 
+        # Model — dropdown or text input depending on provider
+        self.model_combo = QComboBox()
+        self.model_combo.setMinimumHeight(32)
+        self.model_edit = QLineEdit()
+        self.model_edit.setPlaceholderText("e.g. gpt-4o")
+        self.model_edit.setMinimumHeight(32)
+        self.model_edit.setStyleSheet("QLineEdit { background: #2d2d2d; color: #eee; border: 1px solid #444; border-radius: 4px; padding: 6px; }")
+        self.model_combo.setVisible(False)
+        self.model_edit.setVisible(False)
+        layout.addRow("Model:", self.model_combo)
+        layout.addRow("Model:", self.model_edit)
+
         self.api_key_edit = QLineEdit()
         self.api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.api_key_edit.setPlaceholderText("sk-...")
@@ -214,13 +269,6 @@ class SettingsWindow(QMainWindow):
         self.api_hint = QLabel('<a href="https://ai.hackclub.com/" style="color: #f0a500;">Get your free API key at ai.hackclub.com</a>')
         self.api_hint.setOpenExternalLinks(True)
         layout.addRow("", self.api_hint)
-
-        self.custom_model_label = QLabel("Model name:")
-        self.custom_model_label.setVisible(False)
-        self.custom_model_edit = QLineEdit()
-        self.custom_model_edit.setPlaceholderText("e.g. gpt-4o")
-        self.custom_model_edit.setVisible(False)
-        layout.addRow(self.custom_model_label, self.custom_model_edit)
 
         self.custom_url_label = QLabel("Base URL:")
         self.custom_url_label.setVisible(False)
@@ -234,7 +282,7 @@ class SettingsWindow(QMainWindow):
         layout.addRow("", QFrame())
 
         self.wake_word_edit = QLineEdit()
-        self.wake_word_edit.setPlaceholderText("hey lumi")
+        self.wake_word_edit.setPlaceholderText("hey computer")
         layout.addRow("Wake word:", self.wake_word_edit)
 
         self.sensitivity_spin = QDoubleSpinBox()
@@ -298,23 +346,31 @@ class SettingsWindow(QMainWindow):
         return w
 
     def _on_provider_change(self, provider: str):
+        prov = PROVIDERS.get(provider)
         is_custom = provider == "Custom"
-        self.custom_model_label.setVisible(is_custom)
-        self.custom_model_edit.setVisible(is_custom)
+        has_models = prov is not None and prov.get("models") is not None
+
+        self.model_combo.setVisible(has_models)
+        self.model_edit.setVisible(not has_models)
+
+        if has_models:
+            self.model_combo.clear()
+            for m in prov["models"]:
+                self.model_combo.addItem(m)
+            self.model_combo.setCurrentText(prov["model"])
+
         self.custom_url_label.setVisible(is_custom)
         self.custom_url_edit.setVisible(is_custom)
-        prov = PROVIDERS.get(provider)
+
         if prov and not is_custom:
             self.api_hint.setText(f'<a href="{prov["link"]}" style="color: #f0a500;">{provider} docs</a>')
             self.api_hint.setVisible(True)
-        elif is_custom:
-            self.api_hint.setVisible(False)
         else:
             self.api_hint.setVisible(False)
 
     def _load_config(self, cfg: dict):
         jarvis = cfg.get("lumi", cfg.get("jarvis", {}))
-        self.wake_word_edit.setText(jarvis.get("wake_word", "hey lumi"))
+        self.wake_word_edit.setText(jarvis.get("wake_word", "hey computer"))
         self.sensitivity_spin.setValue(float(jarvis.get("wake_word_sensitivity", 0.7)))
         stt = cfg.get("stt", {})
         self.stt_model_combo.setCurrentText(stt.get("model", "large-v3"))
@@ -326,10 +382,18 @@ class SettingsWindow(QMainWindow):
         self.speed_spin.setValue(float(tts.get("speed", 1.0)))
         llm = cfg.get("llm", {})
         base_url = llm.get("base_url", "")
+        model = llm.get("model", "")
         for name, prov in PROVIDERS.items():
             if prov["base_url"] == base_url:
                 self.provider_combo.setCurrentText(name)
+                if prov.get("models"):
+                    idx = self.model_combo.findText(model)
+                    if idx >= 0:
+                        self.model_combo.setCurrentIndex(idx)
+                else:
+                    self.model_edit.setText(model)
                 break
+
         try:
             from dotenv import dotenv_values
             env = dotenv_values(str(PROJECT_ROOT / ".env"))
@@ -352,8 +416,9 @@ class SettingsWindow(QMainWindow):
         cfg["tts"]["speed"] = self.speed_spin.value()
 
         provider = self.provider_combo.currentText()
+        has_models = provider in PROVIDERS and PROVIDERS[provider].get("models") is not None
+        model = self.model_combo.currentText() if has_models else self.model_edit.text().strip()
         prov = PROVIDERS.get(provider)
-        model = self.custom_model_edit.text().strip() if provider == "Custom" else (prov["model"] if prov else "")
         base_url = self.custom_url_edit.text().strip() if provider == "Custom" else (prov["base_url"] if prov else "")
         cfg["llm"]["model"] = model
         cfg["llm"]["base_url"] = base_url

@@ -1,16 +1,12 @@
 @echo off
-:: Lumi Quick Launch — starts with voice loop + tray
-:: Double-click this to run Lumi
-
+:: Lumi Launcher - Runs as tray app with NO terminal window
 cd /d "%~dp0"
 
-if not exist venv\Scripts\python.exe (
-    echo Lumi venv not found. Run setup.bat first.
+if not exist venv\Scripts\pythonw.exe (
+    echo Lumi not installed. Run install.bat first.
     pause
     exit /b 1
 )
 
-echo Starting Lumi...
-echo.
-venv\Scripts\python.exe main.py
-pause
+:: Start Lumi in background (no window)
+start "" venv\Scripts\pythonw.exe lumi_app.py

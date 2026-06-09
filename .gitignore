@@ -37,11 +37,21 @@ MEMORY.md
 
 # ---- Environment & Secrets (NEVER commit these) ----
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 config.local.yaml
 *.key
 *.pem
+*.cert
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials.json
+client_secret.json
+auth.json
+token.json
+oauth_tokens.json
 
 # ---- Models (large files, download on first run) ----
 models/
@@ -66,6 +76,8 @@ MANIFEST
 *.zip
 *.tar.gz
 *.whl
+*.msi
+espeak-ng-extracted/
 
 # ---- Misc ----
 *.bak

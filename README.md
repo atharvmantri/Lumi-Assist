@@ -8,38 +8,63 @@ A local-first, always-on AI voice assistant for Windows. Controlled entirely by 
 
 ## Quick Start
 
-### One-line install
+### Install
 
-Paste this into **PowerShell** and press Enter. The installer handles everything:
+Download or clone the repo, then double-click `install.bat`. It walks you through:
 
-```powershell
-irm https://raw.githubusercontent.com/atharvmantri/Lumi-Assist/main/install.ps1 | iex
-```
+1. Python 3.11 check (installs if missing via winget)
+2. Choose install folder
+3. Clone or update source
+4. Create virtual environment
+5. Install Python dependencies
+6. Download Piper TTS voice model
+7. Enter API key and pick your provider/model
+8. Optional: Record voice samples to train a custom wake word model
 
-That's it. When the installer finishes, a **Lumi** icon sits on your desktop. Double-click it and start talking.
+That's it. When it finishes, a **Lumi** shortcut is on your desktop.
+
+### Run
+
+| File | What it does |
+|---|---|
+| `launch.bat` | Starts Lumi as a tray app — **no terminal window** |
+| `launch_voice.bat` | Starts Lumi with terminal — see live STT/LLM/TTS output |
+
+Double-click the one you want. For daily use, `launch.bat` is the one — Lumi sits quietly in your system tray until you say "hey lumi."
 
 ---
 
-### Manual install
+## Wake Word Detection
 
-If you prefer to see every step:
+Lumi detects these phrases: **"hey lumi"**, **"ok lumi"**, **"yo lumi"**, or just **"lumi"**.
 
-```powershell
-git clone https://github.com/atharvmantri/Lumi-Assist.git
-cd Lumi-Assist
-py -3.11 -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-copy .env.example .env
-# edit .env and paste your API key
-python main.py
+### Default Detection (Works Immediately)
+Uses energy-based detection + quick transcription. No setup needed — works right after install.
+
+### Custom Model (Better Accuracy)
+Train a model using your own voice for much better accuracy:
+
+```bat
+:: 1. Install training dependencies
+pip install livekit-wakeword[listener]
+
+:: 2. Record your voice samples
+python record_wake_samples.py
+
+:: 3. Train the model (takes 10-30 min)
+pip install livekit-wakeword[train,eval,export]
+livekit-wakeword run configs/lumi.yaml
 ```
+
+The installer offers to do all this for you during setup.
 
 ---
 
 ### API Key
 
-Lumi uses the HackClub AI proxy (free, no credit card). Get a key at [hackclub.com](https://hackclub.com/) and put it in `.env`:
+Lumi uses the HackClub AI proxy (free, no credit card). Get a key at [ai.hackclub.com](https://ai.hackclub.com/) and enter it during install.
+
+You can also set it manually in `.env`:
 
 ```env
 HACKCLUB_API_KEY=sk-hc-v1-...
@@ -85,7 +110,7 @@ Two threads run concurrently:
 
 | Thread | Runs | Manages |
 |---|---|---|
-| **Voice loop** | Background thread | Wake word → STT → LLM → TTS pipeline |
+| **Voice loop** | Background thread | Wake word -> STT -> LLM -> TTS pipeline |
 | **Tray + overlay** | Main Qt thread | System tray icon, bottom-center animated overlay, Windows toast notifications |
 
 ---
@@ -117,7 +142,7 @@ tts:
 stt:
   model: "large-v3-turbo"        # smaller, faster whisper model
 lumi:
-  wake_word_sensitivity: 0.5     # lower = more sensitive
+  wake_word_sensitivity: 0.7     # lower = more sensitive
 ```
 
 The full configuration reference:
@@ -176,7 +201,7 @@ When a tool call fails, Lumi records the error. If the same error pattern recurs
 
 View what Lumi has learned:
 
-```powershell
+```bat
 python -m core.learning --show
 ```
 
@@ -184,7 +209,7 @@ python -m core.learning --show
 
 ## Testing
 
-```powershell
+```bat
 python tests/test_quick.py          # Smoke tests (config, tools, overlay, TTS cleaning)
 python -m core.diagnostics           # Health check (9 components)
 python -m core.llm --smoke-test      # LLM connectivity
@@ -201,7 +226,7 @@ python -m core.executor --list       # List all registered tools
 | Problem | Fix |
 |---|---|
 | Wake word not detecting | Lower `wake_word_sensitivity` to `0.5` in `config.yaml` |
-| Overlay not visible | Right-click tray icon → **Test Overlay** to cycle through states |
+| Overlay not visible | Right-click tray icon -> **Test Overlay** to cycle through states |
 | TTS silent | Verify voice model exists in `models/piper/` |
 | STT too slow | Set `stt.device: "cuda"` in `config.yaml` (requires NVIDIA GPU) |
 | LLM errors | Check `.env` has a valid `HACKCLUB_API_KEY` |
@@ -239,11 +264,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
 ```
 Lumi-Assist/
-  main.py                     Entry point — voice loop + tray
+  install.bat                 Terminal installer (no GUI needed)
+  launch.bat                  Start as tray app (no terminal window)
+  launch_voice.bat            Start with terminal (live output)
   config.yaml                 Main configuration
-  install.ps1                 One-line PowerShell installer
   requirements.txt            Python dependencies
-  .env.example                API key template
 
   core/                       Pipeline components
     llm.py                    Streaming LLM client with tool execution

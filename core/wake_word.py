@@ -1,35 +1,13 @@
-"""Wake word detection for Lumi — openWakeWord, CPU only.
+"""Wake word detection for Lumi using livekit-wakeword.
 
-Design:
-  - Runs continuously on a dedicated background thread, never touching the GPU.
-  - Reads 80-ms blocks of 16 kHz mono audio from the default mic.
-  - On each block, openWakeWord returns scores in [0, 1] for the loaded models.
-  - When `hey_lumi` crosses the configured sensitivity threshold, fire callback
-    (or set a threading.Event) — caller is responsible for any cooldown / locking
-    out re-triggers during the response cycle.
+Uses livekit-wakeword library (based on openWakeWord but with better Conv-Attention classifier)
+for reliable detection of: "hey lumi", "ok lumi", "yo lumi", "lumi"
 
-Two usage modes:
-
-    # Event-based (clean for main.py orchestration):
-    det = WakeWordDetector()
-    det.start()
-    det.wait()           # blocks until next trigger; clears event
-    det.pause()          # stop detecting until det.resume()
-
-    # Callback-based:
-    det = WakeWordDetector(on_trigger=lambda score: print(f'WAKE! {score:.3f}'))
-    det.start()
-    ...
-    det.stop()
-
-Smoke test:
-  python -m core.wake_word --smoke-test          # listen on mic, print each trigger
-  python -m core.wake_word --file PATH.wav       # score a WAV (does not require mic)
+Fallback to energy-based detection + quick transcription if livekit-wakeword is not installed.
 """
 from __future__ import annotations
 
-import argparse
-import sys
+import os
 import threading
 import time
 from pathlib import Path
@@ -37,37 +15,28 @@ from typing import Any, Callable
 
 import numpy as np
 
+# Check if livekit-wakeword is available
 try:
-    from openwakeword.model import Model as OWWModel
-except ImportError as e:  # pragma: no cover
-    raise SystemExit(
-        "openwakeword not installed. Run: pip install -r requirements.txt"
-    ) from e
+    from livekit.wakeword import WakeWordModel
+    HAS_LIVEKIT_WAKEWORD = True
+except ImportError:
+    HAS_LIVEKIT_WAKEWORD = False
 
-from core.config import load_config
+# Default model path (will be updated when custom model is trained)
+MODEL_DIR = Path(__file__).resolve().parent.parent / "data" / "wakeword_models"
+DEFAULT_MODEL = MODEL_DIR / "hey_lumi.onnx"
 
-# openWakeWord works on 16 kHz, 16-bit, mono — same as Whisper, so we share the rate.
+# Fallback: energy-based detection parameters
 SAMPLE_RATE = 16000
-BLOCK_MS = 80                                  # openWakeWord's native block size
-BLOCK_SAMPLES = SAMPLE_RATE * BLOCK_MS // 1000   # = 1280 samples
-
-# Maps our config wake_word string to the openWakeWord pretrained model key.
-# openWakeWord ships: hey_jarvis, alexa, hey_mycroft, hey_rhasspy.
-# Custom wake words need their own .onnx — for branded wake words we map
-# to the closest available model and accept the tradeoff.
-_WAKE_WORD_TO_MODEL = {
-    "hey lumi": "hey_jarvis",       # closest match — user says "hey lumi", model detects "hey jarvis" pattern
-    "hey_lumi": "hey_jarvis",
-    "hey jarvis": "hey_jarvis",
-    "hey_jarvis": "hey_jarvis",
-    "alexa": "alexa",
-    "hey mycroft": "hey_mycroft",
-    "hey rhasspy": "hey_rhasspy",
-}
+ENERGY_RATIO_THRESHOLD = 2.5
 
 
 class WakeWordDetector:
-    """Background mic listener that fires when the wake word is heard."""
+    """Background mic listener for wake word detection.
+
+    Uses livekit-wakeword if available (best accuracy),
+    otherwise falls back to energy detection + quick transcription.
+    """
 
     def __init__(
         self,
@@ -76,27 +45,11 @@ class WakeWordDetector:
         on_trigger: Callable[[float], None] | None = None,
         verbose: bool = True,
     ) -> None:
-        cfg = config or load_config()
-        ww_cfg = cfg["lumi"]
-        self.phrase: str = ww_cfg["wake_word"].strip().lower()
-        self.sensitivity: float = float(ww_cfg["wake_word_sensitivity"])
-        model_key = _WAKE_WORD_TO_MODEL.get(self.phrase)
-        if model_key is None:
-            raise ValueError(
-                f"wake_word={self.phrase!r} not in supported set: "
-                f"{sorted(_WAKE_WORD_TO_MODEL)}. Custom models would need their own .onnx."
-            )
-        self.model_key = model_key
-
-        if verbose:
-            print(f"[ww] loading openWakeWord model for {model_key!r} (threshold={self.sensitivity})...")
-        t0 = time.perf_counter()
-        self.model = OWWModel(
-            wakeword_models=[model_key],
-            inference_framework="onnx",  # tflite is also available but onnx is consistent with our stack
-        )
-        if verbose:
-            print(f"[ww] model loaded in {time.perf_counter() - t0:.2f}s")
+        cfg = config or {}
+        lumi_cfg = cfg.get("lumi", cfg.get("jarvis", {}))
+        self.sensitivity: float = float(lumi_cfg.get("wake_word_sensitivity", 0.5))
+        # Map sensitivity to threshold: low sensitivity = high threshold
+        self.threshold = 1.0 - (self.sensitivity * 0.8)  # 0.2 to 1.0
 
         self._on_trigger = on_trigger or (lambda score: None)
         self._trigger_event = threading.Event()
@@ -104,11 +57,45 @@ class WakeWordDetector:
         self._listener_thread: threading.Thread | None = None
         self._stop = threading.Event()
         self._paused = threading.Event()
-
-        # Re-trigger guard: ignore further triggers for this many seconds after one fires.
         self.cooldown_s: float = 1.0
 
-    # ---- event API -------------------------------------------------------
+        # Initialize wake word model
+        self._model = None
+        self._use_fallback = False
+
+        if HAS_LIVEKIT_WAKEWORD:
+            model_path = DEFAULT_MODEL if DEFAULT_MODEL.exists() else None
+            if model_path:
+                try:
+                    if verbose:
+                        print(f"[ww] Loading custom wake word model: {model_path}")
+                    self._model = WakeWordModel(models=[str(model_path)])
+                    if verbose:
+                        print(f"[ww] Custom model loaded successfully")
+                except Exception as e:
+                    if verbose:
+                        print(f"[ww] Failed to load custom model: {e}")
+                        print(f"[ww] Falling back to energy-based detection")
+                    self._use_fallback = True
+            else:
+                if verbose:
+                    print(f"[ww] No custom model found at {DEFAULT_MODEL}")
+                    print(f"[ww] Falling back to energy-based detection")
+                    print(f"[ww] To train a custom model:")
+                    print(f"[ww]   1. Run: python record_wake_samples.py")
+                    print(f"[ww]   2. Run: pip install livekit-wakeword[train,eval,export]")
+                    print(f"[ww]   3. Run: livekit-wakeword run configs/lumi.yaml")
+                self._use_fallback = True
+        else:
+            if verbose:
+                print(f"[ww] livekit-wakeword not installed")
+                print(f"[ww] Using energy-based detection")
+                print(f"[ww] For better accuracy, install livekit-wakeword:")
+                print(f"[ww]   pip install livekit-wakeword[listener]")
+            self._use_fallback = True
+
+        if verbose:
+            print(f"[ww] Sensitivity: {self.sensitivity} (threshold: {self.threshold:.2f})")
 
     @property
     def last_score(self) -> float:
@@ -121,24 +108,16 @@ class WakeWordDetector:
         self._trigger_event.clear()
 
     def wait(self, timeout: float | None = None) -> bool:
-        """Block until the next trigger. Returns True if fired, False on timeout."""
         fired = self._trigger_event.wait(timeout=timeout)
         if fired:
             self._trigger_event.clear()
         return fired
 
     def pause(self) -> None:
-        """Temporarily stop emitting triggers (mic still reads, just suppressed).
-        Use during Lumi's own response cycle so its TTS doesn't self-trigger.
-        """
         self._paused.set()
 
     def resume(self) -> None:
-        # Drop any buffered state so the post-pause window starts clean
-        self.model.reset()
         self._paused.clear()
-
-    # ---- listener thread -------------------------------------------------
 
     def start(self) -> None:
         if self._listener_thread is not None and self._listener_thread.is_alive():
@@ -158,137 +137,156 @@ class WakeWordDetector:
         try:
             import sounddevice as sd
         except ImportError:
-            print("[ww] sounddevice missing; listener thread exiting", file=sys.stderr)
+            print("[ww] sounddevice missing; listener thread exiting")
             return
 
+        if self._use_fallback:
+            self._run_fallback(sd)
+        else:
+            self._run_livekit(sd)
+
+    def _run_livekit(self, sd) -> None:
+        """Run using livekit-wakeword model."""
         last_trigger_at = 0.0
+        block_ms = 80
+        block_samples = int(SAMPLE_RATE * block_ms / 1000)
+
         with sd.InputStream(
             samplerate=SAMPLE_RATE,
             channels=1,
             dtype="int16",
-            blocksize=BLOCK_SAMPLES,
+            blocksize=block_samples,
         ) as stream:
             while not self._stop.is_set():
-                block, _overflow = stream.read(BLOCK_SAMPLES)
                 if self._paused.is_set():
+                    time.sleep(0.1)
                     continue
-                audio_i16 = block[:, 0] if block.ndim > 1 else block
 
-                scores = self.model.predict(audio_i16)
-                score = float(scores.get(self.model_key, 0.0))
-                self._last_score = score
+                block, _overflow = stream.read(block_samples)
+                audio = block[:, 0] if block.ndim > 1 else block
 
-                if score >= self.sensitivity:
+                scores = self._model.predict(audio)
+
+                # Check all wake word variants
+                max_score = 0.0
+                for key, score in scores.items():
+                    if score > max_score:
+                        max_score = score
+
+                self._last_score = max_score
+
+                if max_score > self.threshold:
                     now = time.monotonic()
-                    if now - last_trigger_at < self.cooldown_s:
-                        continue
-                    last_trigger_at = now
+                    if now - last_trigger_at >= self.cooldown_s:
+                        last_trigger_at = now
+                        self._trigger_event.set()
+                        try:
+                            self._on_trigger(max_score)
+                        except Exception:
+                            pass
+
+    def _run_fallback(self, sd) -> None:
+        """Fallback: energy-based detection + quick transcription."""
+        last_trigger_at = 0.0
+        energy_buffer = []
+        buffer_size = 100
+        speech_frames = []
+        is_speaking = False
+        speech_start_time = 0
+
+        block_ms = 50
+        block_samples = int(SAMPLE_RATE * block_ms / 1000)
+
+        with sd.InputStream(
+            samplerate=SAMPLE_RATE,
+            channels=1,
+            dtype="float32",
+            blocksize=block_samples,
+        ) as stream:
+            while not self._stop.is_set():
+                if self._paused.is_set():
+                    if speech_frames:
+                        self._check_phrase(speech_frames, last_trigger_at)
+                        speech_frames = []
+                        is_speaking = False
+                    time.sleep(0.1)
+                    continue
+
+                block, _overflow = stream.read(block_samples)
+                audio = block[:, 0] if block.ndim > 1 else block
+                frame_energy = float(np.sqrt(np.mean(audio ** 2)))
+
+                energy_buffer.append(frame_energy)
+                if len(energy_buffer) > buffer_size:
+                    energy_buffer.pop(0)
+
+                if len(energy_buffer) > 10:
+                    avg_energy = np.mean(energy_buffer[:-1])
+                else:
+                    avg_energy = frame_energy
+
+                if avg_energy < 0.001:
+                    avg_energy = 0.001
+
+                energy_ratio = frame_energy / avg_energy
+                self._last_score = energy_ratio
+
+                if energy_ratio > self.energy_threshold and not is_speaking:
+                    is_speaking = True
+                    speech_start_time = time.monotonic()
+                    speech_frames = [audio.copy()]
+                elif is_speaking:
+                    speech_frames.append(audio.copy())
+
+                    if energy_ratio < self.energy_threshold * 0.5:
+                        self._check_phrase(speech_frames, last_trigger_at)
+                        speech_frames = []
+                        is_speaking = False
+                    elif time.monotonic() - speech_start_time > 3.0:
+                        self._check_phrase(speech_frames, last_trigger_at)
+                        speech_frames = []
+                        is_speaking = False
+
+    def _check_phrase(self, frames: list, last_trigger_at: float) -> None:
+        """Fallback: quick transcription to verify wake word."""
+        if not frames:
+            return
+
+        audio = np.concatenate(frames)
+        duration = len(audio) / SAMPLE_RATE
+        if duration < 0.5 or duration > 6.0:
+            return
+
+        now = time.monotonic()
+        if now - last_trigger_at < self.cooldown_s:
+            return
+
+        # Try quick transcription
+        try:
+            from faster_whisper import WhisperModel
+            model_path = Path(__file__).resolve().parent.parent / "models" / "whisper"
+            model_path.mkdir(parents=True, exist_ok=True)
+            model = WhisperModel(
+                "tiny",
+                device="cpu",
+                compute_type="int8",
+                download_root=str(model_path),
+            )
+            segments, _ = model.transcribe(audio, beam_size=1, language="en", vad_filter=True)
+            text = "".join(seg.text for seg in segments).strip().lower()
+
+            # Check for wake word variants
+            wake_phrases = ["lumi", "hey lumi", "ok lumi", "yo lumi", "hey computer", "computer"]
+            if any(phrase in text for phrase in wake_phrases):
+                match_count = sum(1 for p in wake_phrases if p in text)
+                score = min(1.0, match_count * 0.3 + 0.4)
+                now = time.monotonic()
+                if now - last_trigger_at >= self.cooldown_s:
+                    self._last_score = score
                     self._trigger_event.set()
                     try:
                         self._on_trigger(score)
-                    except Exception as e:  # noqa: BLE001
-                        print(f"[ww] on_trigger callback raised: {e}", file=sys.stderr)
-
-
-# ---------------------------------------------------------------------------
-# Scoring a WAV file (no mic required)
-# ---------------------------------------------------------------------------
-
-def score_wav(wav_path: str | Path, *, verbose: bool = True) -> tuple[float, list[float]]:
-    """Run a WAV through the wake word model and return (peak_score, all_scores).
-
-    Useful for testing without a mic, or for batch-evaluating accuracy on known
-    positive/negative clips. WAV must be 16 kHz mono 16-bit PCM.
-    """
-    import wave as _wave
-    cfg = load_config()
-    phrase = cfg["lumi"]["wake_word"].strip().lower()
-    model_key = _WAKE_WORD_TO_MODEL[phrase]
-
-    with _wave.open(str(wav_path), "rb") as wf:
-        if wf.getnchannels() != 1 or wf.getframerate() != SAMPLE_RATE or wf.getsampwidth() != 2:
-            raise ValueError(
-                f"WAV must be 16kHz mono 16-bit PCM (got "
-                f"{wf.getframerate()}Hz/{wf.getnchannels()}ch/{wf.getsampwidth()*8}-bit)"
-            )
-        raw = wf.readframes(wf.getnframes())
-    samples = np.frombuffer(raw, dtype=np.int16)
-
-    if verbose:
-        print(f"[ww] scoring {wav_path} ({samples.size / SAMPLE_RATE:.2f}s of audio)")
-    model = OWWModel(wakeword_models=[model_key], inference_framework="onnx")
-    all_scores: list[float] = []
-    for start in range(0, samples.size - BLOCK_SAMPLES + 1, BLOCK_SAMPLES):
-        block = samples[start:start + BLOCK_SAMPLES]
-        s = float(model.predict(block).get(model_key, 0.0))
-        all_scores.append(s)
-    peak = max(all_scores) if all_scores else 0.0
-    if verbose:
-        print(f"[ww] peak score: {peak:.3f}  (avg {sum(all_scores)/max(1,len(all_scores)):.3f})")
-    return peak, all_scores
-
-
-# ---------------------------------------------------------------------------
-# CLI / smoke test
-# ---------------------------------------------------------------------------
-
-def _live_listen(seconds: float) -> int:
-    """Run the listener for `seconds` and print each trigger + a heartbeat."""
-    triggers: list[tuple[float, float]] = []   # (elapsed_s, score)
-
-    def on_trigger(score: float) -> None:
-        elapsed = time.monotonic() - t0
-        triggers.append((elapsed, score))
-        print(f"  [{elapsed:5.1f}s] *** WAKE *** score={score:.3f}")
-
-    det = WakeWordDetector(on_trigger=on_trigger)
-    det.start()
-    t0 = time.monotonic()
-    print(f"[smoke] listening for {seconds:.0f}s — say 'hey lumi' a few times")
-    print(f"[smoke] sensitivity threshold = {det.sensitivity}")
-    print(f"[smoke] (heartbeat every 2s shows last block's score)")
-    next_beat = t0 + 2.0
-    try:
-        while time.monotonic() - t0 < seconds:
-            now = time.monotonic()
-            if now >= next_beat:
-                next_beat = now + 2.0
-                print(f"  [{now - t0:5.1f}s] heartbeat   score={det.last_score:.3f}")
-            time.sleep(0.1)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        det.stop()
-    print()
-    print(f"[smoke] total triggers: {len(triggers)}")
-    if not triggers:
-        print("[smoke] NO TRIGGERS — try lowering wake_word_sensitivity in config.yaml")
-        return 1
-    print("[smoke] OK")
-    return 0
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Lumi wake word (openWakeWord)")
-    parser.add_argument("--smoke-test", action="store_true", help="Listen on mic for 30s and print triggers")
-    parser.add_argument("--seconds", type=float, default=30.0, help="Listen duration for --smoke-test (default 30)")
-    parser.add_argument("--file", metavar="WAV", help="Score a 16kHz mono WAV instead of listening on mic")
-    args = parser.parse_args()
-
-    if args.file:
-        peak, scores = score_wav(args.file)
-        # Exit 0 if peak crossed the configured threshold, else 1.
-        cfg = load_config()
-        thresh = float(cfg["lumi"]["wake_word_sensitivity"])
-        triggered = peak >= thresh
-        print(f"[result] threshold={thresh}  peak={peak:.3f}  triggered={triggered}")
-        raise SystemExit(0 if triggered else 1)
-
-    if args.smoke_test:
-        raise SystemExit(_live_listen(args.seconds))
-
-    parser.print_help()
-
-
-if __name__ == "__main__":
-    main()
+                    except Exception:
+                        pass
+        except Exception:
+            pass  # Silently ignore errors

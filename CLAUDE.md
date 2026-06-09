@@ -2,7 +2,7 @@
 
 ## Quick Context
 This is **Lumi**, a local-first voice assistant for Windows 11 built by **Atharv**.
-- **Wake word:** "hey lumi"
+- **Wake word:** "hey computer"
 - **Architecture:** voice loop (background thread) + system tray + animated overlay (main Qt thread)
 - **Tech stack:** Python 3.11, PyQt6, faster-whisper, Piper TTS, openWakeWord, HackClub API proxy
 

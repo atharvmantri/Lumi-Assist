@@ -269,7 +269,7 @@ def voice_loop(stt: STT, llm: LLMClient, tts: TTS, stop_event: threading.Event) 
     det.start()
 
     print()
-    print("Lumi is listening. Say 'hey lumi' to wake. Ctrl+C to exit.")
+    print("Lumi is listening. Say 'hey computer' to wake. Ctrl+C to exit.")
     print()
 
     turn = 0

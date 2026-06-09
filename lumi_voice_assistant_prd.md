@@ -252,7 +252,7 @@ Clipboard: {get_clipboard_preview()}
 
 ```yaml
 lumi:
-  wake_word: "hey lumi"
+  wake_word: "hey computer"
   wake_word_sensitivity: 0.7
 
 stt:

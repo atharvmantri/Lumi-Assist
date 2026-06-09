@@ -1,0 +1,69 @@
+# livekit-wakeword training config for Lumi
+# Run: livekit-wakeword run configs/lumi.yaml
+
+model_name: hey_lumi
+target_phrases:
+  - "hey lumi"
+  - "ok lumi"
+  - "yo lumi"
+  - "lumi"
+  - "hey lumi wake up"
+  - "ok lumi listen"
+
+# Negative phrases that sound similar (adversarial)
+negative_phrases:
+  - "hey louie"
+  - "hey loony"
+  - "hey looney"
+  - "hey loomie"
+  - "hey loony"
+  - "ok loony"
+  - "yo loony"
+  - "lumen"
+  - "luminous"
+  - "luminaria"
+  - "illuminate"
+  - "albumi"
+  - "volume"
+  - "plume"
+  - "costume"
+  - "resume"
+  - "assume"
+  - "perfume"
+  - "consume"
+  - "presume"
+
+n_samples: 25000
+n_samples_val: 5000
+n_samples_test: 5000
+
+model:
+  model_type: conv_attention
+  model_size: small
+
+steps: 50000
+target_fp_per_hour: 0.2
+
+# Data generation settings
+tts_backend: piper_vits
+piper_tts:
+  voices:
+    - en_US-amy-medium
+    - en_US-lessac-medium
+    - en_GB-southern_english_female-low
+    - en_GB-jenny_dioco-medium
+    - en_US-kristin-medium
+    - en_US-hfc_female-medium
+  speeds: [0.8, 0.9, 1.0, 1.1, 1.2]
+
+# Augmentation settings
+augment:
+  snr_db: [10, 15, 20, 25, 30]
+  reverb: true
+  pitch_shift: [-2, -1, 0, 1, 2]
+  time_stretch: [0.9, 1.0, 1.1]
+  volume: [0.5, 0.75, 1.0, 1.25, 1.5]
+  noise_types: [babble, cafe, street, home, office]
+
+# Output
+output_dir: data/wakeword_models

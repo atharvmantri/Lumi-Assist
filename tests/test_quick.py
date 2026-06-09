@@ -29,7 +29,7 @@ def test_config() -> bool:
     assert "stt" in cfg, "missing stt section"
     assert "llm" in cfg, "missing llm section"
     assert "tts" in cfg, "missing tts section"
-    assert cfg["lumi"]["wake_word"] == "hey lumi"
+    assert cfg["lumi"]["wake_word"] == "hey computer"
     print("  ✓ config loads correctly")
     return True
 

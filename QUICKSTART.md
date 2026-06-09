@@ -6,7 +6,7 @@
 3. Double-click `launch.bat` to start Lumi
 
 ## Once Lumi is Running
-1. Say **"hey lumi"** to wake it up
+1. Say **"hey computer"** to wake it up
 2. Wait for the chime, then speak your request
 3. Lumi will respond out loud
 
