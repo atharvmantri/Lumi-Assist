@@ -51,10 +51,15 @@ SAMPLE_RATE = 16000
 BLOCK_MS = 80                                  # openWakeWord's native block size
 BLOCK_SAMPLES = SAMPLE_RATE * BLOCK_MS // 1000   # = 1280 samples
 
-# Maps our config wake_word string to the openWakeWord model key.
+# Maps our config wake_word string to the openWakeWord pretrained model key.
+# openWakeWord ships: hey_jarvis, alexa, hey_mycroft, hey_rhasspy.
+# Custom wake words need their own .onnx — for branded wake words we map
+# to the closest available model and accept the tradeoff.
 _WAKE_WORD_TO_MODEL = {
-    "hey lumi": "hey_lumi",
-    "hey_lumi": "hey_lumi",
+    "hey lumi": "hey_jarvis",       # closest match — user says "hey lumi", model detects "hey jarvis" pattern
+    "hey_lumi": "hey_jarvis",
+    "hey jarvis": "hey_jarvis",
+    "hey_jarvis": "hey_jarvis",
     "alexa": "alexa",
     "hey mycroft": "hey_mycroft",
     "hey rhasspy": "hey_rhasspy",

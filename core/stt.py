@@ -44,7 +44,10 @@ def _register_nvidia_dll_dirs() -> None:
         return
     bin_dirs: list[str] = []
     for pkg in ("nvidia.cublas", "nvidia.cudnn", "nvidia.cuda_nvrtc"):
-        spec = importlib.util.find_spec(pkg)
+        try:
+            spec = importlib.util.find_spec(pkg)
+        except ModuleNotFoundError:
+            continue
         if spec is None or not spec.submodule_search_locations:
             continue
         for base in spec.submodule_search_locations:

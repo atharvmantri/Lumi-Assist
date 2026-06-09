@@ -3,17 +3,36 @@
 Loads `config.yaml` from the project root and exposes typed accessors.
 Single source of truth — every core module imports `load_config()` rather
 than reading the file itself.
+
+When running as a bundled PyInstaller exe, PROJECT_ROOT resolves to the
+directory containing the exe (where config.yaml, models/, data/ live)
+rather than the temporary _MEIPASS extraction directory.
 """
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
 from dotenv import load_dotenv
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+def _resolve_project_root() -> Path:
+    """Find the project root. When frozen (PyInstaller), use the exe's
+    parent directory so that config.yaml, models/, data/ are found
+    next to the exe. Otherwise, use the source tree location.
+    """
+    if getattr(sys, "frozen", False):
+        # Running as bundled exe — project root is next to the exe
+        return Path(sys.executable).resolve().parent
+    else:
+        # Running from source — two levels up from core/config.py
+        return Path(__file__).resolve().parent.parent
+
+
+PROJECT_ROOT = _resolve_project_root()
 CONFIG_PATH = PROJECT_ROOT / "config.yaml"
 CONFIG_LOCAL_PATH = PROJECT_ROOT / "config.local.yaml"
 ENV_PATH = PROJECT_ROOT / ".env"
