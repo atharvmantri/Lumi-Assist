@@ -7,73 +7,7 @@ import string
 from tools import tool
 
 
-@tool(
-    name="generate_password",
-    description="Generate a secure random password with customizable length and character types.",
-    parameters={
-        "type": "object",
-        "properties": {
-            "length": {
-                "type": "integer",
-                "description": "Password length (default 16, max 128)",
-            },
-            "uppercase": {
-                "type": "boolean",
-                "description": "Include uppercase letters (default true)",
-            },
-            "lowercase": {
-                "type": "boolean",
-                "description": "Include lowercase letters (default true)",
-            },
-            "digits": {
-                "type": "boolean",
-                "description": "Include digits (default true)",
-            },
-            "symbols": {
-                "type": "boolean",
-                "description": "Include symbols (default true)",
-            },
-        },
-        "required": [],
-    },
-)
-def generate_password(length: int = 16, uppercase: bool = True, lowercase: bool = True, digits: bool = True, symbols: bool = True) -> str:
-    length = max(4, min(length, 128))
-
-    charset = ""
-    if uppercase:
-        charset += string.ascii_uppercase
-    if lowercase:
-        charset += string.ascii_lowercase
-    if digits:
-        charset += string.digits
-    if symbols:
-        charset += "!@#$%^&*()-_=+[]{}|;:,.<>?"
-
-    if not charset:
-        return "error: at least one character type must be enabled"
-
-    password = "".join(secrets.choice(charset) for _ in range(length))
-
-    # Ensure at least one of each enabled type
-    has_upper = any(c in string.ascii_uppercase for c in password)
-    has_lower = any(c in string.ascii_lowercase for c in password)
-    has_digit = any(c in string.digits for c in password)
-    has_symbol = any(c in "!@#$%^&*()-_=+[]{}|;:,.<>?" for c in password)
-
-    if uppercase and not has_upper or lowercase and not has_lower or digits and not has_digit or symbols and not has_symbol:
-        # Regenerate until all types present (usually works first try)
-        for _ in range(100):
-            password = "".join(secrets.choice(charset) for _ in range(length))
-            if all([
-                not uppercase or any(c in string.ascii_uppercase for c in password),
-                not lowercase or any(c in string.ascii_lowercase for c in password),
-                not digits or any(c in string.digits for c in password),
-                not symbols or any(c in "!@#$%^&*()-_=+[]{}|;:,.<>?" for c in password),
-            ]):
-                break
-
-    return f"Generated password ({length} chars): {password}"
+from tools.security import generate_password
 
 
 @tool(

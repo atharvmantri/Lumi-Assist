@@ -305,8 +305,9 @@ def sentiment_analysis(text: str | None = None, audio_path: str | None = None) -
         # Clean any markdown block wrapping
         json_match = re.search(r"\{.*\}", response, re.DOTALL)
         if json_match:
-            return json_match.group(0)
-        return response
+            # Parse to ensure it is valid JSON
+            parsed = json.loads(json_match.group(0))
+            return json.dumps(parsed, indent=2)
     except Exception:
         pass
 
