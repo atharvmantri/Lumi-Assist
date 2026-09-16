@@ -4,8 +4,8 @@
 #
 # This file is intentionally CPU-safe. NVIDIA/CUDA runtime wheels live in
 # requirements-gpu.txt and are installed by install.bat only when an NVIDIA GPU
-# is detected. That keeps fresh installs much smaller and avoids making CUDA a
-# hard requirement for reviewers/users on ordinary Windows laptops.
+# is detected. That keeps fresh installs smaller and avoids making CUDA a hard
+# requirement for reviewers/users on ordinary Windows laptops.
 
 # ===== Core LLM / config =====
 openai>=1.0.0
@@ -13,7 +13,7 @@ python-dotenv>=1.0.0
 PyYAML>=6.0.1
 requests>=2.31.0
 
-# ===== STT =====
+# ===== STT + fresh-install wake-word verifier =====
 faster-whisper>=1.0.0
 numpy>=1.26.0,<2.0
 
@@ -22,9 +22,6 @@ sounddevice>=0.4.6
 
 # ===== TTS =====
 piper-tts>=1.2.0
-
-# ===== Wake word =====
-openwakeword>=0.6.0
 onnxruntime>=1.17.0
 
 # ===== UI =====
@@ -44,6 +41,11 @@ win10toast>=0.9
 # ===== Web =====
 duckduckgo-search>=6.0.0
 ddgs>=9.0.0
+
+# ===== Optional wake-word training/runtime =====
+# core/wake_word.py works on a fresh install without this dependency by using
+# faster-whisper as its verifier. Install livekit-wakeword separately only when
+# you want to use a trained data/wakeword_models/hey_lumi.onnx model.
 
 # ===== Optional GPU acceleration =====
 # For NVIDIA GPU support, additionally run:
