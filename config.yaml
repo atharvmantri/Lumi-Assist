@@ -1,30 +1,31 @@
-# Lumi configuration — see lumi_voice_assistant_prd.md section 7
+# Lumi configuration — safe defaults for a fresh Windows install.
+# install.bat writes machine-specific overrides to config.local.yaml.
 
 lumi:
-  wake_word: "hey computer"
+  wake_word: "hey lumi"
   wake_word_sensitivity: 0.5
 
 stt:
-  model: "large-v3"           # Options: tiny, base, small, medium, large-v3, large-v3-turbo
-  device: "cuda"
-  compute_type: "float16"
+  model: "small"              # CPU-friendly default; installer upgrades GPU machines
+  device: "cpu"
+  compute_type: "int8"
   silence_threshold_ms: 1500
   language: null              # null = auto-detect
 
 llm:
   provider: "hackclub"
-  api_key_env: "HACKCLUB_API_KEY"   # read from .env
-  model: "openrouter/free"  # free, 0.75s first-token, clean tool calls (probed best free HackClub model)
+  api_key_env: "HACKCLUB_API_KEY"
+  model: "openrouter/free"
   base_url: "https://ai.hackclub.com/proxy/v1"
   max_tokens: 2048
   temperature: 0.7
   system_prompt_path: "prompts/system.md"
-  history_turns: 20           # rolling short-term memory window
+  history_turns: 20
 
 tts:
-  engine: "piper"             # Options: piper, coqui
-  voice: "en_GB-southern_english_female-low"  # soft, breathy, slightly romantic — "cute & flirty" sweet spot. Alt voices on disk: en_US-amy-medium (warm, less breathy), en_GB-jenny_dioco-medium (British, friendly)
-  device: "cpu"               # Piper runs faster-than-realtime on CPU; flip to "cuda" only after verifying GPU build works
+  engine: "piper"
+  voice: "en_GB-southern_english_female-low"
+  device: "cpu"
   speed: 1.0
 
 ui:
@@ -32,7 +33,7 @@ ui:
   opacity: 0.88
   always_on_top: true
   show_transcript: true
-  window_position: [80, 80]   # x, y from top-left
+  window_position: [80, 80]
 
 audio:
   input_device: "default"

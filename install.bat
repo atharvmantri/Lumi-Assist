@@ -1,13 +1,15 @@
 @echo off
-setlocal enabledelayedexpansion
+setlocal EnableExtensions EnableDelayedExpansion
 
 :: ============================================================
-:: Lumi - Installer
-:: Run: install.bat
+:: Lumi - Windows installer
+:: Creates an isolated Python 3.11 venv and never relies on global pip.
 :: ============================================================
 
 title Lumi Installer
 color 0B
+cd /d "%~dp0"
+set "TARGET=%CD%"
 
 echo.
 echo  ========================================
@@ -15,293 +17,296 @@ echo    Lumi - Voice Assistant Installer
 echo  ========================================
 echo.
 
-cd /d "%~dp0"
-set "TARGET=%cd%"
-
-:: Step 1 - Check Python
-echo [1/9] Checking Python 3.11...
+:: ------------------------------------------------------------
+:: 1. Python 3.11
+:: ------------------------------------------------------------
+echo [1/8] Checking Python 3.11...
 py -3.11 --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo  Python 3.11 not found.
-    echo  Would you like to install it now? (y/n)
-    set /p installpy=
-    if /i "!installpy!"=="y" (
-        echo  Installing Python 3.11 via winget...
-        winget install --id Python.Python.3.11 --silent --accept-source-agreements --accept-package-agreements --scope user
-        if !errorlevel! neq 0 (
-            echo  [ERROR] Installation failed. Please install Python 3.11 manually:
-            echo    https://www.python.org/downloads/
-            pause
-            exit /b 1
-        )
-        echo  Done. Please re-run install.bat.
-        pause
-        exit /b 0
-    ) else (
-        echo  Install Python 3.11 from https://www.python.org/downloads/ and re-run.
+if errorlevel 1 (
+    echo  Python 3.11 was not found.
+    where winget >nul 2>&1
+    if errorlevel 1 (
+        echo  [ERROR] Install Python 3.11 from https://www.python.org/downloads/
         pause
         exit /b 1
     )
+    set /p "INSTALLPY=Install Python 3.11 with winget now? (y/n): "
+    if /i not "!INSTALLPY!"=="y" (
+        echo  Install Python 3.11 and re-run install.bat.
+        pause
+        exit /b 1
+    )
+    winget install --id Python.Python.3.11 --silent --accept-source-agreements --accept-package-agreements --scope user
+    if errorlevel 1 (
+        echo  [ERROR] Python installation failed.
+        pause
+        exit /b 1
+    )
+    echo  Python was installed. Re-run install.bat so the py launcher refreshes.
+    pause
+    exit /b 0
 )
 for /f "tokens=*" %%i in ('py -3.11 --version 2^>^&1') do echo  %%i
 
-:: Step 2 - Install directory
+:: ------------------------------------------------------------
+:: 2. Install location / source
+:: ------------------------------------------------------------
 echo.
-echo [2/9] Install location:
-echo  %TARGET%
-echo.
-echo  Press Enter to use this folder, or type a different path:
-set /p customdir=
-if not "!customdir!"=="" (
-    if not exist "!customdir!" mkdir "!customdir!" 2>nul
-    set "TARGET=!customdir!"
+echo [2/8] Install location
+ echo  Current folder: %TARGET%
+set "CUSTOMDIR="
+set /p "CUSTOMDIR=Press Enter to use it, or type another folder: "
+if defined CUSTOMDIR (
+    if not exist "!CUSTOMDIR!" mkdir "!CUSTOMDIR!" 2>nul
+    if errorlevel 1 (
+        echo  [ERROR] Could not create "!CUSTOMDIR!".
+        pause
+        exit /b 1
+    )
+    set "TARGET=!CUSTOMDIR!"
 )
-
 cd /d "!TARGET!"
 
-:: Step 3 - Clone or update
-echo.
-echo [3/9] Getting Lumi source...
-if exist ".git" (
-    echo  Updating existing installation...
-    git pull --quiet
+if exist ".git\" (
+    echo  Updating existing repository...
+    git pull --ff-only
+    if errorlevel 1 (
+        echo  [WARNING] git pull could not fast-forward. Continuing with the files already here.
+    )
 ) else (
-    echo  Cloning repository...
-    git clone --quiet https://github.com/atharvmantri/Lumi-Assist.git .
-)
-if %errorlevel% neq 0 (
-    echo  [ERROR] Git operation failed. Make sure git is installed.
-    pause
-    exit /b 1
-)
-echo  Done.
-
-:: Step 4 - Virtual environment
-echo.
-echo [4/9] Creating virtual environment...
-if not exist "venv\" (
-    py -3.11 -m venv venv
-    echo  Done.
-) else (
-    echo  Already exists.
-)
-
-:: Step 5 - Install dependencies
-echo.
-echo [5/9] Installing Python packages ^(this takes a few minutes^)...
-call venv\Scripts\activate.bat
-pip install --quiet --upgrade pip
-pip install --quiet -r requirements.txt
-if %errorlevel% neq 0 (
-    echo.
-    echo  [WARNING] Some packages failed. Lumi will still work on CPU.
-)
-echo  Done.
-
-:: Step 6 - Download voice model
-echo.
-echo [6/9] Downloading Piper TTS voice model...
-set "VOICE_DIR=models\piper"
-if not exist "%VOICE_DIR%" mkdir "%VOICE_DIR%"
-if exist "%VOICE_DIR%\en_GB-southern_english_female-low.onnx" (
-    echo  Already downloaded.
-) else (
-    echo  Downloading ^(about 40 MB^)...
-    py -m pip install --quiet huggingface-hub
-    py -c "from huggingface_hub import hf_hub_download; hf_hub_download('rhassys/piper-voices', 'en/en_GB/southern_english_female/low/en_GB-southern_english_female-low.onnx', local_dir='%VOICE_DIR%', repo_type='model')"
-    py -c "from huggingface_hub import hf_hub_download; hf_hub_download('rhassys/piper-voices', 'en/en_GB/southern_english_female/low/en_GB-southern_english_female-low.onnx.json', local_dir='%VOICE_DIR%', repo_type='model')"
-    echo  Done.
-)
-
-:: Step 7 - Configuration
-echo.
-echo [7/9] Configuration
-echo.
-
-if not exist ".env" (
-    echo  Enter your LLM API key:
-    set /p apikey=
-) else (
-    for /f "tokens=2 delims==" %%a in ('findstr "HACKCLUB_API_KEY" .env 2^>nul') do set "apikey=%%a"
-    if "!apikey!"=="" (
-        echo  Enter your LLM API key:
-        set /p apikey=
+    :: If this installer is already being run from a downloaded source tree,
+    :: main.py will exist even when .git metadata was omitted. Do not clone over it.
+    if not exist "main.py" (
+        echo  Cloning Lumi...
+        git clone https://github.com/atharvmantri/Lumi-Assist.git .
+        if errorlevel 1 (
+            echo  [ERROR] Git clone failed. Check that Git and internet access are available.
+            pause
+            exit /b 1
+        )
     ) else (
-        echo  Found existing API key: !apikey:~0,8!...
+        echo  Using the source files already in this folder.
     )
 )
 
+:: ------------------------------------------------------------
+:: 3. Isolated venv
+:: ------------------------------------------------------------
 echo.
-echo  Choose provider:
-echo    1. HackClub (free)
-echo    2. OpenRouter
-echo    3. OpenAI
-echo    4. Anthropic (Claude)
-echo    5. Google (Gemini)
-echo    6. Custom
-set /p provchoice=
+echo [3/8] Creating Python 3.11 virtual environment...
+if not exist "venv\Scripts\python.exe" (
+    py -3.11 -m venv venv
+    if errorlevel 1 (
+        echo  [ERROR] Could not create the virtual environment.
+        pause
+        exit /b 1
+    )
+) else (
+    echo  Existing venv found.
+)
+set "PY=!TARGET!\venv\Scripts\python.exe"
+echo  Interpreter: !PY!
 
-set "PROVIDER=HackClub (Free)"
+:: ------------------------------------------------------------
+:: 4. Dependencies
+:: ------------------------------------------------------------
+echo.
+echo [4/8] Installing required packages into Lumi's venv...
+"!PY!" -m pip install --upgrade pip
+if errorlevel 1 goto :pip_fail
+"!PY!" -m pip install -r requirements.txt
+if errorlevel 1 goto :pip_fail
+
+:: Default to a reviewer-friendly CPU configuration. If NVIDIA is present and
+:: the CUDA runtime wheels install correctly, enable GPU acceleration.
+set "STT_DEVICE=cpu"
+set "STT_COMPUTE=int8"
+set "STT_MODEL=small"
+where nvidia-smi >nul 2>&1
+if not errorlevel 1 (
+    echo  NVIDIA GPU detected. Installing optional CUDA runtime packages...
+    "!PY!" -m pip install -r requirements-gpu.txt
+    if errorlevel 1 (
+        echo  [WARNING] CUDA extras failed; Lumi will use CPU STT instead.
+    ) else (
+        set "STT_DEVICE=cuda"
+        set "STT_COMPUTE=float16"
+        set "STT_MODEL=large-v3-turbo"
+        echo  GPU acceleration enabled.
+    )
+) else (
+    echo  No NVIDIA GPU detected; using CPU STT ^(small / int8^).
+)
+
+:: ------------------------------------------------------------
+:: 5. Piper voice
+:: ------------------------------------------------------------
+echo.
+echo [5/8] Preparing Piper TTS voice...
+set "VOICE_DIR=models\piper"
+if not exist "!VOICE_DIR!" mkdir "!VOICE_DIR!"
+if exist "!VOICE_DIR!\en_GB-southern_english_female-low.onnx" if exist "!VOICE_DIR!\en_GB-southern_english_female-low.onnx.json" goto :voice_ready
+
+"!PY!" -m pip install --quiet huggingface-hub
+if errorlevel 1 (
+    echo  [ERROR] Could not install huggingface-hub for the voice download.
+    pause
+    exit /b 1
+)
+
+"!PY!" -c "from huggingface_hub import hf_hub_download; from pathlib import Path; import shutil; d=Path(r'models\piper'); d.mkdir(parents=True,exist_ok=True); fs=['en/en_GB/southern_english_female/low/en_GB-southern_english_female-low.onnx','en/en_GB/southern_english_female/low/en_GB-southern_english_female-low.onnx.json']; [shutil.copy2(hf_hub_download('rhasspy/piper-voices',f,repo_type='model'), d/Path(f).name) for f in fs]"
+if errorlevel 1 (
+    echo  [ERROR] Piper voice download failed.
+    echo  Check internet access, then re-run install.bat.
+    pause
+    exit /b 1
+)
+
+:voice_ready
+echo  Voice files ready.
+
+:: ------------------------------------------------------------
+:: 6. LLM configuration
+:: ------------------------------------------------------------
+echo.
+echo [6/8] LLM configuration
+ echo  Choose an OpenAI-compatible provider:
+ echo    1. HackClub AI ^(default^)
+ echo    2. OpenRouter
+ echo    3. OpenAI
+ echo    4. Google Gemini ^(OpenAI-compatible endpoint^)
+ echo    5. Custom OpenAI-compatible endpoint
+set "PROVCHOICE=1"
+set /p "PROVCHOICE=Choice [1]: "
+if not defined PROVCHOICE set "PROVCHOICE=1"
+
+set "PROVIDER_ID=hackclub"
 set "API_ENV=HACKCLUB_API_KEY"
 set "BASE_URL=https://ai.hackclub.com/proxy/v1"
 set "DEF_MODEL=openrouter/free"
 
-if "!provchoice!"=="2" (
-    set "PROVIDER=OpenRouter"
+if "!PROVCHOICE!"=="2" (
+    set "PROVIDER_ID=openrouter"
     set "API_ENV=OPENROUTER_API_KEY"
     set "BASE_URL=https://openrouter.ai/api/v1"
     set "DEF_MODEL=openrouter/auto"
 )
-if "!provchoice!"=="3" (
-    set "PROVIDER=OpenAI"
+if "!PROVCHOICE!"=="3" (
+    set "PROVIDER_ID=openai"
     set "API_ENV=OPENAI_API_KEY"
     set "BASE_URL=https://api.openai.com/v1"
-    set "DEF_MODEL=gpt-4o"
+    set "DEF_MODEL=gpt-4o-mini"
 )
-if "!provchoice!"=="4" (
-    set "PROVIDER=Anthropic (Claude)"
-    set "API_ENV=ANTHROPIC_API_KEY"
-    set "BASE_URL=https://api.anthropic.com/v1"
-    set "DEF_MODEL=claude-sonnet-4-6"
-)
-if "!provchoice!"=="5" (
-    set "PROVIDER=Google (Gemini)"
+if "!PROVCHOICE!"=="4" (
+    set "PROVIDER_ID=google"
     set "API_ENV=GOOGLE_API_KEY"
     set "BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/"
     set "DEF_MODEL=gemini-2.5-flash"
 )
-if "!provchoice!"=="6" (
-    set "PROVIDER=Custom"
+if "!PROVCHOICE!"=="5" (
+    set "PROVIDER_ID=custom"
     set "API_ENV=CUSTOM_API_KEY"
-    echo  Enter base URL:
-    set /p BASE_URL=
-    echo  Enter model name:
-    set /p DEF_MODEL=
+    set /p "BASE_URL=Base URL: "
+    set /p "DEF_MODEL=Model name: "
 )
 
-echo.
-echo  Enter model name (or press Enter for default: !DEF_MODEL!):
-set /p modelname=
-if "!modelname!"=="" set "modelname=!DEF_MODEL!"
+set "MODELNAME="
+set /p "MODELNAME=Model name [!DEF_MODEL!]: "
+if not defined MODELNAME set "MODELNAME=!DEF_MODEL!"
 
-:: Save config
-set "PROVIDER_CLEAN=!PROVIDER!"
-set "PROVIDER_CLEAN=!PROVIDER_CLEAN: (=!"
-set "PROVIDER_CLEAN=!PROVIDER_CLEAN:)=!"
-set "PROVIDER_CLEAN=!PROVIDER_CLEAN: =_!"
-set "PROVIDER_CLEAN=!PROVIDER_CLEAN:,=!"
-set "PROVIDER_CLEAN=!PROVIDER_CLEAN:.=!"
+set "APIKEY="
+set /p "APIKEY=API key for !API_ENV!: "
+if not defined APIKEY (
+    echo  [ERROR] An API key is required for the LLM connection.
+    pause
+    exit /b 1
+)
 
-echo lumi:
-echo   wake_word: "hey lumi"
-echo   wake_word_sensitivity: 0.5 > config.yaml
-echo.
-echo stt:
-echo   model: "large-v3"
-echo   device: "cuda"
-echo   compute_type: "float16"
-echo   silence_threshold_ms: 1500
-echo   language: null >> config.yaml
-echo.
-echo llm:
-echo   provider: "!PROVIDER_CLEAN!"
-echo   api_key_env: "!API_ENV!"
-echo   model: "!modelname!"
-echo   base_url: "!BASE_URL!"
-echo   max_tokens: 2048
-echo   temperature: 0.7
-echo   system_prompt_path: "prompts/system.md"
-echo   history_turns: 20 >> config.yaml
-echo.
-echo tts:
-echo   engine: "piper"
-echo   voice: "en_GB-southern_english_female-low"
-echo   device: "cpu"
-echo   speed: 1.0 >> config.yaml
-echo.
-echo ui:
-echo   theme: "dark"
-echo   opacity: 0.88
-echo   always_on_top: true
-echo   show_transcript: true
-echo   window_position: [80, 80] >> config.yaml
-echo.
-echo audio:
-echo   input_device: "default"
-echo   output_device: "default"
-echo   sample_rate: 16000 >> config.yaml
+> ".env" echo !API_ENV!=!APIKEY!
 
-:: Save API key
-echo !API_ENV!=!apikey! > .env
+:: Keep the repository's config.yaml pristine. Machine-specific choices go in
+:: config.local.yaml and are deep-merged by core/config.py.
+(
+    echo # Generated by install.bat - safe to edit locally
+    echo lumi:
+    echo   wake_word: "hey lumi"
+    echo   wake_word_sensitivity: 0.5
+    echo stt:
+    echo   model: "!STT_MODEL!"
+    echo   device: "!STT_DEVICE!"
+    echo   compute_type: "!STT_COMPUTE!"
+    echo llm:
+    echo   provider: "!PROVIDER_ID!"
+    echo   api_key_env: "!API_ENV!"
+    echo   model: "!MODELNAME!"
+    echo   base_url: "!BASE_URL!"
+) > "config.local.yaml"
 
-:: Create directories
+:: ------------------------------------------------------------
+:: 7. Local directories + diagnostics
+:: ------------------------------------------------------------
+echo.
+echo [7/8] Running installation checks...
 if not exist "data\conversations" mkdir "data\conversations"
 if not exist "logs\learning" mkdir "logs\learning"
 if not exist "logs\screenshots" mkdir "logs\screenshots"
 if not exist "data\wake_samples" mkdir "data\wake_samples"
 
-:: Step 8 - Wake word training option
-echo.
-echo [8/9] Wake Word Detection
-echo.
-echo  Lumi detects: "hey lumi", "ok lumi", "yo lumi", "lumi"
-echo  Works immediately with energy-based detection.
-echo.
-echo  For better accuracy, train a custom model using your voice.
-echo  This requires recording samples and running training.
-echo.
-echo  Would you like to set up wake word training now? (y/n)
-set /p trainwake=
-if /i "!trainwake!"=="y" (
-    echo.
-    echo  Installing training dependencies...
-    pip install --quiet livekit-wakeword[listener]
-    echo.
-    echo  Starting voice recorder...
-    echo  Say each phrase naturally when prompted.
-    echo.
+call repair_env.bat
+if errorlevel 1 (
+    echo  [ERROR] Core dependency preflight failed.
     pause
-    py record_wake_samples.py
-    if exist "data\wake_samples\positive" (
-        echo.
-        echo  Training custom model...
-        echo  This may take 10-30 minutes depending on your hardware.
-        echo.
-        pip install --quiet livekit-wakeword[train,eval,export]
-        livekit-wakeword run configs/lumi.yaml
-        echo.
-        echo  Custom wake word model trained and saved!
-    ) else (
-        echo.
-        echo  No samples recorded. Using energy-based detection.
-    )
-) else (
-    echo  Using energy-based detection.
-    echo  Train a custom model later:
-    echo    1. python record_wake_samples.py
-    echo    2. pip install livekit-wakeword[train,eval,export]
-    echo    3. livekit-wakeword run configs/lumi.yaml
+    exit /b 1
 )
 
-:: Step 9 - Done
+"!PY!" -m core.diagnostics
+if errorlevel 1 (
+    echo.
+    echo  [WARNING] One or more hardware/runtime checks failed.
+    echo  The detailed report above tells you exactly what still needs attention.
+) else (
+    echo  Diagnostics passed.
+)
+
+:: ------------------------------------------------------------
+:: 8. Shortcut / done
+:: ------------------------------------------------------------
 echo.
-echo [9/9] Finalizing...
+echo [8/8] Finalizing...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=[Environment]::GetFolderPath('Desktop'); $s=(New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $d 'Lumi.lnk')); $s.TargetPath='!TARGET!\launch.bat'; $s.WorkingDirectory='!TARGET!'; $s.Save()" >nul 2>&1
 
 echo.
 echo  ========================================
-echo    Installation Complete!
-echo  ========================================
+echo    Installation Complete
+ echo  ========================================
 echo.
-echo  Provider:  !PROVIDER!
-echo  Model:     !modelname!
-echo  Voice:     British Female (Southern)
-echo  Wake Word: hey lumi (or ok lumi, yo lumi, lumi)
-echo  Location:  !TARGET!
+echo  Location:   !TARGET!
+echo  Wake word:  hey lumi
+ echo  STT:        !STT_MODEL! on !STT_DEVICE! ^(!STT_COMPUTE!^)
+echo  Provider:   !PROVIDER_ID!
+echo  Model:      !MODELNAME!
 echo.
-echo  To start Lumi, double-click launch.bat
-echo  (No terminal window will appear)
-echo.
-echo  For voice input mode:
-echo    Double-click launch_voice.bat
+echo  Reviewer/debug launch:
+ echo    .\launch_voice.bat
+ echo.
+echo  Normal tray launch:
+ echo    .\launch.bat
+ echo.
+echo  NOTE: package installs must use Lumi's venv, e.g.:
+ echo    venv\Scripts\python.exe -m pip install PACKAGE
+ echo  Global `pip install` may point at another Python and will not fix this venv.
 echo.
 pause
+exit /b 0
+
+:pip_fail
+echo.
+echo  [ERROR] Python dependency installation failed.
+echo  Nothing is intentionally ignored here because missing core packages
+ echo  ^(especially NumPy^) make Lumi unable to start.
+echo.
+echo  Retry manually with the exact project interpreter:
+ echo    venv\Scripts\python.exe -m pip install -r requirements.txt
+ echo.
+pause
+exit /b 1

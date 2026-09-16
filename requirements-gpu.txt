@@ -1,0 +1,6 @@
+# Optional NVIDIA CUDA runtime dependencies for faster-whisper / CTranslate2.
+# install.bat installs this file automatically when nvidia-smi is available.
+
+nvidia-cublas-cu12>=12.0
+nvidia-cudnn-cu12>=9.0,<10
+nvidia-cuda-nvrtc-cu12>=12.0
