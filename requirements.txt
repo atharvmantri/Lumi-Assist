@@ -27,7 +27,8 @@ onnxruntime>=1.17.0
 # ===== UI =====
 PyQt6>=6.6.0
 
-# ===== PC automation =====
+# ===== System / PC automation =====
+psutil>=5.9.0
 pyautogui>=0.9.54
 pywinauto>=0.6.8
 keyboard>=0.13.5
