@@ -1,0 +1,43 @@
+name: Recertification smoke test
+
+on:
+  push:
+    branches: [main, "fix/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  windows-python311:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONUTF8: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install core dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Verify critical imports
+        shell: pwsh
+        run: |
+          python -c "import sys, numpy, openai, yaml, dotenv, sounddevice, PyQt6, faster_whisper, piper; print(sys.executable); print('numpy', numpy.__version__)"
+
+      - name: Compile project Python files
+        shell: pwsh
+        run: python -m compileall -q core tools ui main.py lumi_app.py
+
+      - name: Run quick regression tests
+        shell: pwsh
+        run: python tests/test_quick.py
