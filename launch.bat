@@ -1,6 +1,6 @@
 @echo off
 setlocal
-:: Lumi Launcher - starts the tray app after a dependency preflight
+:: Lumi Launcher - production tray/overlay path after a dependency preflight
 cd /d "%~dp0"
 
 if not exist "venv\Scripts\pythonw.exe" (
@@ -18,5 +18,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: Start Lumi in background with no Python console window.
-start "" "%~dp0venv\Scripts\pythonw.exe" "%~dp0lumi_app.py"
+:: main.py is the canonical voice pipeline used by the reviewer/debug launcher.
+:: Using the same entry point here prevents the normal tray launcher and the
+:: certification path from drifting into two different runtimes.
+start "" "%~dp0venv\Scripts\pythonw.exe" "%~dp0main.py"
